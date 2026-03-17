@@ -1,0 +1,64 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "provider": {
+    "ollama": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "RunPod-Ollama",
+      "options": {
+        "baseURL": "http://localhost:11434/v1"
+      },
+      "models": {
+        "qwen3-coder-next:latest": {
+          "name": "Qwen3 80B (Remote)",
+          "tools": true
+        }
+      }
+    }
+  }
+}
+
+
+// revamped
+{
+    "$schema": "https://opencode.ai/config.json",
+    "provider": {
+        "ollama": {
+            "npm": "@ai-sdk/openai-compatible",
+            "name": "Ollama-Bridge",
+            "options": {
+                "baseURL": "http://localhost:11434/v1"
+            },
+            "models": {
+                "qwen3-coder-next:latest": {
+                    "name": "Qwen3 80B (Remote)",
+                    "tools": true
+                },
+                "qwen3:4b": {
+                    "name": "Qwen3 4B (Local)",
+                    "tools": true
+                },
+                "qwen3-coder-next:cloud": {
+                    "name": "Qwen3 Cloud (Local)",
+                    "tools": true
+                },
+                "qwen2.5-coder:latest": {
+                    "name": "Windows PC Model",
+                    "tools": true
+                }
+            }
+        },
+        "windows-pc": {
+            "npm": "@ai-sdk/openai-compatible",
+            "name": "Windows-Ollama",
+            "options": {
+                "baseURL": "http://192.168.29.215:11434/v1"
+            },
+            "models": {
+                "qwen2.5-coder:latest": {
+                    "name": "PC-Coder",
+                    "tools": true
+                }
+            }
+        }
+    }
+}

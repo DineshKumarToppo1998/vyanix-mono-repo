@@ -1,0 +1,72 @@
+version: "3.9"
+
+services:
+
+  nginx:
+    image: nginx:latest
+    container_name: ecommerce_nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - frontend
+      - backend
+    restart: always
+
+  frontend:
+    build: ./frontend
+    container_name: ecommerce_frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://backend:8080
+    restart: always
+
+  backend:
+    build: ./backend
+    container_name: ecommerce_backend
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/ecommerce
+      - SPRING_DATASOURCE_USERNAME=admin
+      - SPRING_DATASOURCE_PASSWORD=admin
+      - REDIS_HOST=redis
+      - MEILI_HOST=http://meilisearch:7700
+    depends_on:
+      - postgres
+      - redis
+      - meilisearch
+    restart: always
+
+  postgres:
+    image: postgres:15
+    container_name: ecommerce_postgres
+    environment:
+      POSTGRES_DB: ecommerce
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+    volumes:
+      - ./data/postgres:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: always
+
+  redis:
+    image: redis:7
+    container_name: ecommerce_redis
+    ports:
+      - "6379:6379"
+    restart: always
+
+  meilisearch:
+    image: getmeili/meilisearch
+    container_name: ecommerce_meilisearch
+    ports:
+      - "7700:7700"
+    environment:
+      - MEILI_NO_ANALYTICS=true
+    volumes:
+      - ./data/meilisearch:/meili_data
+    restart: always

@@ -1,0 +1,25 @@
+spring:
+  application:
+    name: vyanix-webservice
+
+
+
+  datasource:
+    url: jdbc:postgresql://aws-1-ap-southeast-1.pooler.supabase.com:6543/postgres
+    username: postgres.pktrqykpjbwxbadgceor
+    password: Supabase#Vyanix@2026
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: update # Options: none, validate, update, create, create-drop
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        id:
+          new_generator_mappings: true
+    show-sql: true # Optional: prints SQL to console
+
+jwt:
+  secret: mysupersecretmysupersecretmysupersecret123456
+  expiration-ms: 300000

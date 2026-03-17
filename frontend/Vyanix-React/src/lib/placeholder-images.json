@@ -1,0 +1,52 @@
+{
+  "placeholderImages": [
+    {
+      "id": "hero-electronics",
+      "description": "Premium wireless headphones on a clean surface",
+      "imageUrl": "https://picsum.photos/seed/elec1/1200/600",
+      "imageHint": "wireless headphones"
+    },
+    {
+      "id": "cat-electronics",
+      "description": "Close up of a modern smartphone",
+      "imageUrl": "https://picsum.photos/seed/phone1/600/400",
+      "imageHint": "smartphone technology"
+    },
+    {
+      "id": "cat-fashion",
+      "description": "Minimalist clothing rack with neutral tones",
+      "imageUrl": "https://picsum.photos/seed/fashion1/600/400",
+      "imageHint": "minimalist fashion"
+    },
+    {
+      "id": "cat-home",
+      "description": "Modern living room chair with a plant",
+      "imageUrl": "https://picsum.photos/seed/home1/600/400",
+      "imageHint": "interior design"
+    },
+    {
+      "id": "product-1",
+      "description": "Sleek wireless headphones in charcoal grey",
+      "imageUrl": "https://picsum.photos/seed/prod1/600/600",
+      "imageHint": "headphones"
+    },
+    {
+      "id": "product-2",
+      "description": "Modern smartwatch with a leather band",
+      "imageUrl": "https://picsum.photos/seed/prod2/600/600",
+      "imageHint": "smartwatch"
+    },
+    {
+      "id": "product-3",
+      "description": "Compact mirrorless camera with prime lens",
+      "imageUrl": "https://picsum.photos/seed/prod3/600/600",
+      "imageHint": "camera"
+    },
+    {
+      "id": "product-4",
+      "description": "Minimalist linen shirt in white",
+      "imageUrl": "https://picsum.photos/seed/prod4/600/600",
+      "imageHint": "linen shirt"
+    }
+  ]
+}
