@@ -9,6 +9,8 @@ import lombok.Setter;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+import in.vyanix.webservice.entity.UserRole;
+
 @Getter
 @Setter
 @Builder
@@ -20,5 +22,6 @@ public class UserResponse {
     private String firstName;
     private String lastName;
     private String phone;
+    private UserRole role;
     private LocalDateTime createdAt;
 }

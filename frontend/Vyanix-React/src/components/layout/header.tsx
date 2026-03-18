@@ -7,14 +7,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { useCart } from '@/hooks/use-cart';
+import { useAuth } from '@/hooks/use-auth';
 import { useState } from 'react';
 import { CartDrawer } from '@/components/cart/cart-drawer';
 import { ModeToggle } from '@/components/mode-toggle';
 
 export function Header() {
-  const { items } = useCart();
+  const { itemCount } = useCart();
+  const { isAuthenticated, user } = useAuth();
   const [isCartOpen, setIsCartOpen] = useState(false);
-  const cartCount = items.reduce((acc, item) => acc + item.quantity, 0);
 
   return (
     <>
@@ -54,6 +55,9 @@ export function Header() {
                 <User className="h-5 w-5" />
               </Link>
             </Button>
+            {isAuthenticated && user ? (
+              <span className="hidden lg:inline text-sm text-muted-foreground">Hi, {user.firstName}</span>
+            ) : null}
             <Button variant="ghost" size="icon" className="hidden sm:flex">
               <Heart className="h-5 w-5" />
             </Button>
@@ -64,9 +68,9 @@ export function Header() {
               onClick={() => setIsCartOpen(true)}
             >
               <ShoppingCart className="h-5 w-5" />
-              {cartCount > 0 && (
+              {itemCount > 0 && (
                 <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 bg-primary text-primary-foreground border-none">
-                  {cartCount}
+                  {itemCount}
                 </Badge>
               )}
             </Button>

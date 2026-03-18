@@ -12,7 +12,10 @@ import java.util.List;
 import java.util.UUID;
 
 @Entity
-@Table(name = "orders")
+@Table(
+        name = "orders",
+        uniqueConstraints = @UniqueConstraint(name = "uk_orders_user_idempotency_key", columnNames = {"user_id", "idempotency_key"})
+)
 @Getter
 @Setter
 public class Order {
@@ -22,7 +25,11 @@ public class Order {
     private UUID id;
 
     @ManyToOne
+    @JoinColumn(name = "user_id", nullable = false)
     private User user;
+
+    @Column(name = "idempotency_key", length = 255)
+    private String idempotencyKey;
 
     private BigDecimal subtotal;
 

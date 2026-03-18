@@ -8,8 +8,8 @@ import in.vyanix.webservice.entity.User;
 import in.vyanix.webservice.mapper.CartMapper;
 import in.vyanix.webservice.repository.CartItemRepository;
 import in.vyanix.webservice.repository.CartRepository;
-import in.vyanix.webservice.repository.ProductRepository;
 import in.vyanix.webservice.repository.SkuRepository;
+import in.vyanix.webservice.repository.UserRepository;
 import in.vyanix.webservice.service.exception.BadRequestException;
 import in.vyanix.webservice.service.exception.ResourceNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,7 +30,7 @@ public class CartService {
     private CartItemRepository cartItemRepository;
 
     @Autowired
-    private ProductRepository productRepository;
+    private UserRepository userRepository;
 
     @Autowired
     private SkuRepository skuRepository;
@@ -40,7 +40,7 @@ public class CartService {
 
     @Transactional
     public CartResponse getOrCreateCart(UUID userId) {
-        Cart cart = cartRepository.findByUserId(userId)
+        Cart cart = cartRepository.findWithItemsByCurrentUserId(userId)
                 .orElseGet(() -> createCart(userId));
         return cartMapper.mapToResponse(cart);
     }
@@ -51,7 +51,7 @@ public class CartService {
             throw new BadRequestException("Quantity must be greater than 0");
         }
 
-        Cart cart = cartRepository.findByUserId(userId)
+        Cart cart = cartRepository.findWithItemsByCurrentUserId(userId)
                 .orElseGet(() -> createCart(userId));
 
         Sku sku = skuRepository.findById(skuId)
@@ -64,8 +64,11 @@ public class CartService {
                 .orElse(null);
 
         if (existingItem != null) {
-            existingItem.setQuantity(existingItem.getQuantity() + quantity);
+            int updatedQuantity = existingItem.getQuantity() + quantity;
+            validateStockAvailability(sku, updatedQuantity);
+            existingItem.setQuantity(updatedQuantity);
         } else {
+            validateStockAvailability(sku, quantity);
             CartItem newItem = new CartItem();
             newItem.setCart(cart);
             newItem.setSku(sku);
@@ -85,7 +88,7 @@ public class CartService {
             throw new BadRequestException("Quantity must be greater than 0");
         }
 
-        Cart cart = cartRepository.findByUserId(userId)
+        Cart cart = cartRepository.findWithItemsByCurrentUserId(userId)
                 .orElseThrow(() -> new ResourceNotFoundException(Cart.class, userId));
 
         CartItem item = cart.getItems().stream()
@@ -93,6 +96,7 @@ public class CartService {
                 .findFirst()
                 .orElseThrow(() -> new ResourceNotFoundException(CartItem.class, itemId));
 
+        validateStockAvailability(item.getSku(), quantity);
         item.setQuantity(quantity);
         cart.setUpdatedAt(LocalDateTime.now());
         cartRepository.save(cart);
@@ -102,7 +106,7 @@ public class CartService {
 
     @Transactional
     public CartResponse removeFromCart(UUID userId, UUID itemId) {
-        Cart cart = cartRepository.findByUserId(userId)
+        Cart cart = cartRepository.findWithItemsByCurrentUserId(userId)
                 .orElseThrow(() -> new ResourceNotFoundException(Cart.class, userId));
 
         CartItem item = cart.getItems().stream()
@@ -121,23 +125,30 @@ public class CartService {
 
     @Transactional
     public void clearCart(UUID userId) {
-        Cart cart = cartRepository.findByUserId(userId)
+        Cart cart = cartRepository.findWithItemsByCurrentUserId(userId)
                 .orElseThrow(() -> new ResourceNotFoundException(Cart.class, userId));
 
-        cart.getItems().forEach(cartItemRepository::delete);
+        cartItemRepository.deleteAll(cart.getItems());
         cart.getItems().clear();
         cart.setUpdatedAt(LocalDateTime.now());
         cartRepository.save(cart);
     }
 
     private Cart createCart(UUID userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException(User.class, userId));
+
         Cart cart = new Cart();
-        User user = new User();
-        user.setId(userId);
         cart.setUser(user);
         cart.setCreatedAt(LocalDateTime.now());
         cart.setUpdatedAt(LocalDateTime.now());
         cart.setItems(new ArrayList<>());
         return cartRepository.save(cart);
+    }
+
+    private void validateStockAvailability(Sku sku, int requestedQuantity) {
+        if (sku.getStock() == null || sku.getStock() < requestedQuantity) {
+            throw new BadRequestException("Insufficient stock for product: " + sku.getSkuCode());
+        }
     }
 }

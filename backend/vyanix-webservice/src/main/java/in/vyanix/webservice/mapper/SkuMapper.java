@@ -7,6 +7,8 @@ import in.vyanix.webservice.entity.Sku;
 import in.vyanix.webservice.entity.SkuOptionValue;
 import org.springframework.stereotype.Component;
 
+import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -28,11 +30,19 @@ public class SkuMapper {
                 .build();
     }
 
-    private List<SkuOptionValueResponse> mapSkuOptionValues(List<SkuOptionValue> optionValues) {
+    private List<SkuOptionValueResponse> mapSkuOptionValues(Collection<SkuOptionValue> optionValues) {
         if (optionValues == null) {
             return List.of();
         }
         return optionValues.stream()
+                .sorted(Comparator.comparing(
+                                (SkuOptionValue value) -> value.getOptionValue() != null && value.getOptionValue().getOption() != null
+                                        ? value.getOptionValue().getOption().getName()
+                                        : null,
+                                Comparator.nullsLast(String::compareToIgnoreCase))
+                        .thenComparing(value -> value.getOptionValue() != null ? value.getOptionValue().getValue() : null,
+                                Comparator.nullsLast(String::compareToIgnoreCase))
+                        .thenComparing(SkuOptionValue::getId, Comparator.nullsLast(Comparator.naturalOrder())))
                 .map(value -> {
                     ProductOptionValue optionVal = value.getOptionValue();
                     return SkuOptionValueResponse.builder()

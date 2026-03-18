@@ -1,24 +1,36 @@
 package in.vyanix.webservice.dto;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.time.LocalDateTime;
-import java.util.UUID;
+import java.util.List;
 
+@JsonInclude(JsonInclude.Include.NON_NULL)
 @Getter
 @Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class ApiErrorResponse {
-    private UUID requestId;
-    private int statusCode;
-    private String error;
+    @Builder.Default
+    private boolean success = false;
     private String message;
-    private LocalDateTime timestamp;
-    private String path;
+    private List<ValidationError> errors;
+
+    public static ApiErrorResponse of(String message) {
+        ApiErrorResponse response = new ApiErrorResponse();
+        response.message = message;
+        return response;
+    }
+
+    public static ApiErrorResponse of(String message, List<ValidationError> errors) {
+        ApiErrorResponse response = new ApiErrorResponse();
+        response.message = message;
+        response.errors = errors;
+        return response;
+    }
 }

@@ -1,162 +1,238 @@
-import { Product, Category, Cart, CartItem, Order, Address } from '../types';
+import type {
+  Address,
+  ApiProduct,
+  ApiResponse,
+  AuthSession,
+  Cart,
+  Category,
+  LoginRequest,
+  Order,
+  PageResponse,
+  Product,
+  RegisterRequest,
+  User,
+} from '../types';
+import {
+  getApiBaseUrl,
+  normalizeAddress,
+  normalizeCart,
+  normalizeCategory,
+  normalizeOrder,
+  normalizeProduct,
+  normalizeUser,
+} from '../storefront';
 
-const API_BASE_URL = 'http://localhost:8080/api/v1';
+function getAuthToken() {
+  if (typeof window === 'undefined') {
+    return null;
+  }
 
-interface ApiResponse<T> {
-  requestId: string;
-  statusCode: number;
-  message: string;
-  data: T;
+  return localStorage.getItem('authToken');
+}
+
+function createHeaders(headers?: HeadersInit) {
+  const resolvedHeaders = new Headers(headers);
+  const token = getAuthToken();
+
+  if (token) {
+    resolvedHeaders.set('Authorization', `Bearer ${token}`);
+  }
+
+  if (!resolvedHeaders.has('Content-Type')) {
+    resolvedHeaders.set('Content-Type', 'application/json');
+  }
+
+  return resolvedHeaders;
+}
+
+export function createUrl(path: string, params?: Record<string, string | number | undefined>) {
+  const url = new URL(`${getApiBaseUrl()}${path}`);
+
+  if (!params) {
+    return url;
+  }
+
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== '') {
+      url.searchParams.set(key, String(value));
+    }
+  }
+
+  return url;
+}
+
+export async function request<T>(path: string, init?: RequestInit): Promise<ApiResponse<T>> {
+  const response = await fetch(`${getApiBaseUrl()}${path}`, {
+    ...init,
+    headers: createHeaders(init?.headers),
+  });
+
+  const isJson = response.headers.get('content-type')?.includes('application/json');
+  const payload = isJson ? ((await response.json()) as ApiResponse<T>) : null;
+
+  if (!response.ok) {
+    throw new Error(payload?.message ?? 'Request failed');
+  }
+
+  return payload ?? ({ success: true, data: null as T } satisfies ApiResponse<T>);
 }
 
 export const apiClient = {
-  // Products
   getProducts: async (params?: {
     categorySlug?: string;
     search?: string;
-    minPrice?: number;
-    maxPrice?: number;
     page?: number;
     size?: number;
   }) => {
-    const url = new URL(`${API_BASE_URL}/products`, window.location.origin);
-    if (params?.categorySlug) url.searchParams.set('categorySlug', params.categorySlug);
-    if (params?.search) url.searchParams.set('search', params.search);
-    if (params?.minPrice !== undefined) url.searchParams.set('minPrice', params.minPrice.toString());
-    if (params?.maxPrice !== undefined) url.searchParams.set('maxPrice', params.maxPrice.toString());
-    if (params?.page) url.searchParams.set('page', params.page.toString());
-    if (params?.size) url.searchParams.set('size', params.size.toString());
-
-    const response = await fetch(url.toString());
-    const data = await response.json();
-    return data as ApiResponse<{ content: Product[]; totalPages: number }>;
+    const response = await request<PageResponse<ApiProduct>>(`/products${createUrl('', params).search}`, { method: 'GET' });
+    return {
+      success: response.success,
+      data: {
+        ...response.data,
+        content: response.data.content.map(normalizeProduct),
+      },
+    } satisfies ApiResponse<PageResponse<Product>>;
   },
 
   getProductById: async (id: string) => {
-    const response = await fetch(`${API_BASE_URL}/products/${id}`);
-    const data = await response.json();
-    return data as ApiResponse<Product>;
+    const response = await request<ApiProduct>(`/products/${id}`, { method: 'GET' });
+    return { ...response, data: normalizeProduct(response.data) } satisfies ApiResponse<Product>;
   },
 
   getProductBySlug: async (slug: string) => {
-    const response = await fetch(`${API_BASE_URL}/products/slug/${slug}`);
-    const data = await response.json();
-    return data as ApiResponse<Product>;
+    const response = await request<ApiProduct>(`/products/slug/${slug}`, { method: 'GET' });
+    return { ...response, data: normalizeProduct(response.data) } satisfies ApiResponse<Product>;
   },
 
   getCategories: async () => {
-    const response = await fetch(`${API_BASE_URL}/categories`);
-    const data = await response.json();
-    return data as ApiResponse<Category[]>;
+    const response = await request<Category[]>('/categories', { method: 'GET' });
+    return {
+      ...response,
+      data: response.data.map(normalizeCategory),
+    } satisfies ApiResponse<Category[]>;
   },
 
   getCategoryProducts: async (slug: string) => {
-    const response = await fetch(`${API_BASE_URL}/categories/${slug}/products`);
-    const data = await response.json();
-    return data as ApiResponse<Product[]>;
+    const response = await request<ApiProduct[]>(`/categories/${slug}/products`, { method: 'GET' });
+    return { ...response, data: response.data.map(normalizeProduct) } satisfies ApiResponse<Product[]>;
   },
 
   searchProducts: async (query: string, params?: { page?: number; size?: number }) => {
-    const url = new URL(`${API_BASE_URL}/products/search?q=${encodeURIComponent(query)}`, window.location.origin);
-    if (params?.page) url.searchParams.set('page', params.page.toString());
-    if (params?.size) url.searchParams.set('size', params.size.toString());
-
-    const response = await fetch(url.toString());
-    const data = await response.json();
-    return data as ApiResponse<Product[]>;
+    const queryString = createUrl('', {
+      q: query,
+      page: params?.page,
+      size: params?.size,
+    }).search;
+    const response = await request<PageResponse<ApiProduct>>(`/products/search${queryString}`, { method: 'GET' });
+    return {
+      success: response.success,
+      data: {
+        ...response.data,
+        content: response.data.content.map(normalizeProduct),
+      },
+    } satisfies ApiResponse<PageResponse<Product>>;
   },
 
-  // Cart
-  getCart: async (userId: string) => {
-    const response = await fetch(`${API_BASE_URL}/cart?userId=${userId}`);
-    const data = await response.json();
-    return data as ApiResponse<Cart>;
-  },
-
-  addToCart: async (userId: string, skuId: string, quantity: number) => {
-    const response = await fetch(`${API_BASE_URL}/cart/items?userId=${userId}`, {
+  register: async (payload: RegisterRequest) => {
+    const response = await request<User>('/auth/register', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    return { ...response, data: normalizeUser(response.data) } satisfies ApiResponse<User>;
+  },
+
+  login: async (payload: LoginRequest) => {
+    return request<AuthSession>('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  getCurrentUser: async () => {
+    const response = await request<User>('/auth/me', { method: 'GET' });
+    return { ...response, data: normalizeUser(response.data) } satisfies ApiResponse<User>;
+  },
+
+  getCart: async () => {
+    const response = await request<any>('/cart', { method: 'GET' });
+    return { ...response, data: normalizeCart(response.data) } satisfies ApiResponse<Cart>;
+  },
+
+  addToCart: async (skuId: string, quantity: number) => {
+    const response = await request<any>('/cart/items', {
+      method: 'POST',
       body: JSON.stringify({ skuId, quantity }),
     });
-    const data = await response.json();
-    return data as ApiResponse<Cart>;
+    return { ...response, data: normalizeCart(response.data) } satisfies ApiResponse<Cart>;
   },
 
-  updateCartItem: async (userId: string, itemId: string, quantity: number) => {
-    const response = await fetch(`${API_BASE_URL}/cart/items/${itemId}?userId=${userId}`, {
+  updateCartItem: async (itemId: string, quantity: number) => {
+    const response = await request<any>(`/cart/items/${itemId}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ quantity }),
     });
-    const data = await response.json();
-    return data as ApiResponse<Cart>;
+    return { ...response, data: normalizeCart(response.data) } satisfies ApiResponse<Cart>;
   },
 
-  removeFromCart: async (userId: string, itemId: string) => {
-    const response = await fetch(`${API_BASE_URL}/cart/items/${itemId}?userId=${userId}`, {
+  removeFromCart: async (itemId: string) => {
+    const response = await request<any>(`/cart/items/${itemId}`, {
       method: 'DELETE',
     });
-    const data = await response.json();
-    return data as ApiResponse<Cart>;
+    return { ...response, data: normalizeCart(response.data) } satisfies ApiResponse<Cart>;
   },
 
-  // Orders
-  createOrder: async (userId: string, address: Address, items: { skuId: string; quantity: number }[]) => {
-    const response = await fetch(`${API_BASE_URL}/orders?userId=${userId}`, {
+  clearCart: async () => {
+    return request<null>('/cart/clear', { method: 'DELETE' });
+  },
+
+  createOrder: async (
+    address: Address,
+    items: { skuId: string; quantity: number }[],
+    idempotencyKey: string
+  ) => {
+    const response = await request<any>('/orders', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: createHeaders({ 'Idempotency-Key': idempotencyKey }),
       body: JSON.stringify({
         shippingAddress: address,
         items,
       }),
     });
-    const data = await response.json();
-    return data as ApiResponse<Order>;
+    return { ...response, data: normalizeOrder(response.data) } satisfies ApiResponse<Order>;
   },
 
-  getOrders: async (userId: string) => {
-    const response = await fetch(`${API_BASE_URL}/orders?userId=${userId}`);
-    const data = await response.json();
-    return data as ApiResponse<Order[]>;
+  getOrders: async () => {
+    const response = await request<any[]>('/orders', { method: 'GET' });
+    return { ...response, data: response.data.map(normalizeOrder) } satisfies ApiResponse<Order[]>;
   },
 
   getOrderById: async (orderId: string) => {
-    const response = await fetch(`${API_BASE_URL}/orders/${orderId}`);
-    const data = await response.json();
-    return data as ApiResponse<Order>;
+    const response = await request<any>(`/orders/${orderId}`, { method: 'GET' });
+    return { ...response, data: normalizeOrder(response.data) } satisfies ApiResponse<Order>;
   },
 
-  // Addresses
-  getAddresses: async (userId: string) => {
-    const response = await fetch(`${API_BASE_URL}/addresses?userId=${userId}`);
-    const data = await response.json();
-    return data as ApiResponse<Address[]>;
+  getAddresses: async () => {
+    const response = await request<any[]>('/addresses', { method: 'GET' });
+    return { ...response, data: response.data.map(normalizeAddress) } satisfies ApiResponse<Address[]>;
   },
 
-  addAddress: async (userId: string, address: Omit<Address, 'id' | 'userId'>) => {
-    const response = await fetch(`${API_BASE_URL}/addresses?userId=${userId}`, {
+  addAddress: async (address: Omit<Address, 'id'>) => {
+    const response = await request<any>('/addresses', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(address),
     });
-    const data = await response.json();
-    return data as ApiResponse<Address>;
+    return { ...response, data: normalizeAddress(response.data) } satisfies ApiResponse<Address>;
   },
 
-  updateAddress: async (addressId: string, address: Omit<Address, 'id' | 'userId'>) => {
-    const response = await fetch(`${API_BASE_URL}/addresses/${addressId}`, {
+  updateAddress: async (addressId: string, address: Omit<Address, 'id'>) => {
+    const response = await request<any>(`/addresses/${addressId}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(address),
     });
-    const data = await response.json();
-    return data as ApiResponse<Address>;
+    return { ...response, data: normalizeAddress(response.data) } satisfies ApiResponse<Address>;
   },
 
   deleteAddress: async (addressId: string) => {
-    await fetch(`${API_BASE_URL}/addresses/${addressId}`, {
-      method: 'DELETE',
-    });
+    return request<null>(`/addresses/${addressId}`, { method: 'DELETE' });
   },
 };

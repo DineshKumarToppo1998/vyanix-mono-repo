@@ -1,6 +1,7 @@
 package in.vyanix.webservice.controller;
 
 import in.vyanix.webservice.dto.*;
+import in.vyanix.webservice.security.SecurityUtils;
 import in.vyanix.webservice.service.AuthService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,43 +18,28 @@ public class AuthController {
     @Autowired
     private AuthService authService;
 
+    @Autowired
+    private SecurityUtils securityUtils;
+
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<UserResponse>> register(
             @Valid @RequestBody UserRegisterRequest request) {
         UserResponse user = authService.register(request.email(), request.password(),
                 request.firstName(), request.lastName(), request.phone());
-        ApiResponse<UserResponse> response = ApiResponse.<UserResponse>builder()
-                .requestId(UUID.randomUUID())
-                .statusCode(HttpStatus.CREATED.value())
-                .message("User registered successfully")
-                .data(user)
-                .build();
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(user));
     }
 
     @PostMapping("/login")
     public ResponseEntity<ApiResponse<LoginResponse>> login(
-            @RequestParam String email,
-            @RequestParam String password) {
-        LoginResponse result = authService.login(email, password);
-        ApiResponse<LoginResponse> response = ApiResponse.<LoginResponse>builder()
-                .requestId(UUID.randomUUID())
-                .statusCode(HttpStatus.OK.value())
-                .message("Login successful")
-                .data(result)
-                .build();
-        return ResponseEntity.ok(response);
+            @Valid @RequestBody LoginRequest request) {
+        LoginResponse result = authService.login(request.email(), request.password());
+        return ResponseEntity.ok(ApiResponse.success(result));
     }
 
     @GetMapping("/me")
-    public ResponseEntity<ApiResponse<UserResponse>> getCurrentUser(@RequestParam UUID userId) {
+    public ResponseEntity<ApiResponse<UserResponse>> getCurrentUser() {
+        UUID userId = securityUtils.getCurrentUserId();
         UserResponse user = authService.getCurrentUser(userId);
-        ApiResponse<UserResponse> response = ApiResponse.<UserResponse>builder()
-                .requestId(UUID.randomUUID())
-                .statusCode(HttpStatus.OK.value())
-                .message("User retrieved successfully")
-                .data(user)
-                .build();
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(ApiResponse.success(user));
     }
 }

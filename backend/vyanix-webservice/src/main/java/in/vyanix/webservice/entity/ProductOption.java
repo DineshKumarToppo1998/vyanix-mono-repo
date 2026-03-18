@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Entity
@@ -22,7 +22,7 @@ public class ProductOption {
     @ManyToOne
     private Product product;
 
-    @OneToMany(mappedBy = "option")
-    private List<ProductOptionValue> values;
+    @OneToMany(mappedBy = "option", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<ProductOptionValue> values;
 
 }

@@ -3,7 +3,9 @@
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetFooter } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { useCart } from "@/hooks/use-cart";
-import { X, Plus, Minus, ShoppingBag } from "lucide-react";
+import { useAuth } from '@/hooks/use-auth';
+import { useToast } from '@/hooks/use-toast';
+import { X, Plus, Minus, ShoppingBag, User } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { Separator } from "@/components/ui/separator";
@@ -14,7 +16,33 @@ interface CartDrawerProps {
 }
 
 export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
-  const { items, updateQuantity, removeFromCart, subtotal } = useCart();
+  const { isAuthenticated } = useAuth();
+  const { items, itemCount, updateQuantity, removeFromCart, subtotal } = useCart();
+  const { toast } = useToast();
+
+  const handleQuantityChange = async (itemId: string, quantity: number) => {
+    try {
+      await updateQuantity(itemId, quantity);
+    } catch (error) {
+      toast({
+        title: 'Cart update failed',
+        description: error instanceof Error ? error.message : 'Please try again.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleRemove = async (itemId: string) => {
+    try {
+      await removeFromCart(itemId);
+    } catch (error) {
+      toast({
+        title: 'Unable to remove item',
+        description: error instanceof Error ? error.message : 'Please try again.',
+        variant: 'destructive',
+      });
+    }
+  };
 
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
@@ -22,12 +50,25 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
         <SheetHeader className="p-6 border-b">
           <SheetTitle className="flex items-center gap-2">
             <ShoppingBag className="h-5 w-5" />
-            Shopping Cart ({items.length})
+            Shopping Cart ({itemCount})
           </SheetTitle>
         </SheetHeader>
 
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          {items.length === 0 ? (
+          {!isAuthenticated ? (
+            <div className="h-full flex flex-col items-center justify-center text-center space-y-4">
+              <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center">
+                <User className="h-8 w-8 text-muted-foreground" />
+              </div>
+              <div>
+                <p className="font-medium text-lg">Sign in to view your cart</p>
+                <p className="text-muted-foreground">Your cart is stored securely in your account.</p>
+              </div>
+              <Button asChild onClick={onClose}>
+                <Link href="/account">Go to account</Link>
+              </Button>
+            </div>
+          ) : items.length === 0 ? (
             <div className="h-full flex flex-col items-center justify-center text-center space-y-4">
               <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center">
                 <ShoppingBag className="h-8 w-8 text-muted-foreground" />
@@ -56,7 +97,7 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                       variant="ghost" 
                       size="icon" 
                       className="h-6 w-6" 
-                      onClick={() => removeFromCart(item.id)}
+                      onClick={() => void handleRemove(item.id)}
                     >
                       <X className="h-4 w-4" />
                     </Button>
@@ -67,7 +108,7 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                       variant="outline" 
                       size="icon" 
                       className="h-7 w-7"
-                      onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                      onClick={() => void handleQuantityChange(item.id, item.quantity - 1)}
                     >
                       <Minus className="h-3 w-3" />
                     </Button>
@@ -76,7 +117,7 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                       variant="outline" 
                       size="icon" 
                       className="h-7 w-7"
-                      onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                      onClick={() => void handleQuantityChange(item.id, item.quantity + 1)}
                     >
                       <Plus className="h-3 w-3" />
                     </Button>
@@ -87,8 +128,8 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
           )}
         </div>
 
-        {items.length > 0 && (
-          <SheetFooter className="p-6 border-t flex-col gap-4 sm:flex-col">
+          {isAuthenticated && items.length > 0 && (
+            <SheetFooter className="p-6 border-t flex-col gap-4 sm:flex-col">
             <div className="space-y-1.5 w-full">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Subtotal</span>

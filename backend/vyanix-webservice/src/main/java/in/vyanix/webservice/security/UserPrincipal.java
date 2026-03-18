@@ -1,10 +1,13 @@
 package in.vyanix.webservice.security;
 
 import in.vyanix.webservice.entity.User;
+import in.vyanix.webservice.entity.UserRole;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
+import java.util.List;
 
 public class UserPrincipal implements UserDetails {
 
@@ -16,7 +19,8 @@ public class UserPrincipal implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return null;
+        UserRole role = user.getRole() != null ? user.getRole() : UserRole.USER;
+        return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
     }
 
     @Override

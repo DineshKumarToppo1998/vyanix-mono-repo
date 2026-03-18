@@ -23,7 +23,9 @@ public class OrderController {
     private SecurityUtils securityUtils;
 
     @PostMapping("/orders")
-    public ResponseEntity<ApiResponse<OrderResponse>> createOrder(@Valid @RequestBody OrderCreateRequest request) {
+    public ResponseEntity<ApiResponse<OrderResponse>> createOrder(
+            @RequestHeader("Idempotency-Key") String idempotencyKey,
+            @Valid @RequestBody OrderCreateRequest request) {
         UUID userId = securityUtils.getCurrentUserId();
         OrderAddressCreateRequest addressRequest = request.shippingAddress();
         in.vyanix.webservice.entity.OrderAddress address = new in.vyanix.webservice.entity.OrderAddress();
@@ -43,38 +45,21 @@ public class OrderController {
                 })
                 .collect(java.util.stream.Collectors.toList());
 
-        OrderResponse order = orderService.createOrder(userId, address, items);
-        ApiResponse<OrderResponse> response = ApiResponse.<OrderResponse>builder()
-                .requestId(UUID.randomUUID())
-                .statusCode(HttpStatus.CREATED.value())
-                .message("Order created successfully")
-                .data(order)
-                .build();
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        OrderResponse order = orderService.createOrder(userId, idempotencyKey, address, items);
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(order));
     }
 
     @GetMapping("/orders/{id}")
     public ResponseEntity<ApiResponse<OrderResponse>> getOrderById(@PathVariable UUID id) {
-        OrderResponse order = orderService.getOrderById(id);
-        ApiResponse<OrderResponse> response = ApiResponse.<OrderResponse>builder()
-                .requestId(UUID.randomUUID())
-                .statusCode(HttpStatus.OK.value())
-                .message("Order retrieved successfully")
-                .data(order)
-                .build();
-        return ResponseEntity.ok(response);
+        UUID userId = securityUtils.getCurrentUserId();
+        OrderResponse order = orderService.getOrderById(userId, id);
+        return ResponseEntity.ok(ApiResponse.success(order));
     }
 
     @GetMapping("/orders")
     public ResponseEntity<ApiResponse<List<OrderResponse>>> getUserOrders() {
         UUID userId = securityUtils.getCurrentUserId();
         List<OrderResponse> orders = orderService.getUserOrders(userId);
-        ApiResponse<List<OrderResponse>> response = ApiResponse.<List<OrderResponse>>builder()
-                .requestId(UUID.randomUUID())
-                .statusCode(HttpStatus.OK.value())
-                .message("Orders retrieved successfully")
-                .data(orders)
-                .build();
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(ApiResponse.success(orders));
     }
 }

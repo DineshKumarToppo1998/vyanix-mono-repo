@@ -9,6 +9,7 @@ import in.vyanix.webservice.entity.Sku;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -85,9 +86,16 @@ public class CartMapper {
             return "";
         }
         return sku.getProduct().getImages().stream()
+                .sorted(Comparator.comparing(in.vyanix.webservice.entity.ProductImage::getPosition, Comparator.nullsLast(Integer::compareTo))
+                        .thenComparing(in.vyanix.webservice.entity.ProductImage::getId, Comparator.nullsLast(Comparator.naturalOrder())))
                 .filter(img -> img.getPosition() == 0 || img.getPosition() == null)
                 .findFirst()
                 .map(in.vyanix.webservice.entity.ProductImage::getUrl)
-                .orElse("");
+                .orElseGet(() -> sku.getProduct().getImages().stream()
+                        .sorted(Comparator.comparing(in.vyanix.webservice.entity.ProductImage::getPosition, Comparator.nullsLast(Integer::compareTo))
+                                .thenComparing(in.vyanix.webservice.entity.ProductImage::getId, Comparator.nullsLast(Comparator.naturalOrder())))
+                        .map(in.vyanix.webservice.entity.ProductImage::getUrl)
+                        .findFirst()
+                        .orElse(""));
     }
 }

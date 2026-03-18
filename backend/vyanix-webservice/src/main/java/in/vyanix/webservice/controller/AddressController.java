@@ -1,6 +1,7 @@
 package in.vyanix.webservice.controller;
 
 import in.vyanix.webservice.dto.*;
+import in.vyanix.webservice.security.SecurityUtils;
 import in.vyanix.webservice.service.AddressService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,22 +19,20 @@ public class AddressController {
     @Autowired
     private AddressService addressService;
 
+    @Autowired
+    private SecurityUtils securityUtils;
+
     @GetMapping("/addresses")
-    public ResponseEntity<ApiResponse<List<AddressResponse>>> getUserAddresses(@RequestParam UUID userId) {
+    public ResponseEntity<ApiResponse<List<AddressResponse>>> getUserAddresses() {
+        UUID userId = securityUtils.getCurrentUserId();
         List<AddressResponse> addresses = addressService.getUserAddresses(userId);
-        ApiResponse<List<AddressResponse>> response = ApiResponse.<List<AddressResponse>>builder()
-                .requestId(UUID.randomUUID())
-                .statusCode(HttpStatus.OK.value())
-                .message("Addresses retrieved successfully")
-                .data(addresses)
-                .build();
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(ApiResponse.success(addresses));
     }
 
     @PostMapping("/addresses")
     public ResponseEntity<ApiResponse<AddressResponse>> addAddress(
-            @RequestParam UUID userId,
             @Valid @RequestBody AddressCreateRequest request) {
+        UUID userId = securityUtils.getCurrentUserId();
         in.vyanix.webservice.entity.Address address = new in.vyanix.webservice.entity.Address();
         address.setLine1(request.line1());
         address.setLine2(request.line2());
@@ -43,19 +42,14 @@ public class AddressController {
         address.setPostalCode(request.postalCode());
 
         AddressResponse savedAddress = addressService.addAddress(userId, address);
-        ApiResponse<AddressResponse> response = ApiResponse.<AddressResponse>builder()
-                .requestId(UUID.randomUUID())
-                .statusCode(HttpStatus.CREATED.value())
-                .message("Address added successfully")
-                .data(savedAddress)
-                .build();
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(savedAddress));
     }
 
     @PutMapping("/addresses/{addressId}")
     public ResponseEntity<ApiResponse<AddressResponse>> updateAddress(
             @PathVariable UUID addressId,
             @Valid @RequestBody AddressUpdateRequest request) {
+        UUID userId = securityUtils.getCurrentUserId();
         in.vyanix.webservice.entity.Address address = new in.vyanix.webservice.entity.Address();
         address.setLine1(request.line1());
         address.setLine2(request.line2());
@@ -64,36 +58,21 @@ public class AddressController {
         address.setCountry(request.country());
         address.setPostalCode(request.postalCode());
 
-        AddressResponse updatedAddress = addressService.updateAddress(addressId, address);
-        ApiResponse<AddressResponse> response = ApiResponse.<AddressResponse>builder()
-                .requestId(UUID.randomUUID())
-                .statusCode(HttpStatus.OK.value())
-                .message("Address updated successfully")
-                .data(updatedAddress)
-                .build();
-        return ResponseEntity.ok(response);
+        AddressResponse updatedAddress = addressService.updateAddress(userId, addressId, address);
+        return ResponseEntity.ok(ApiResponse.success(updatedAddress));
     }
 
     @DeleteMapping("/addresses/{addressId}")
     public ResponseEntity<ApiResponse<Void>> deleteAddress(@PathVariable UUID addressId) {
-        addressService.deleteAddress(addressId);
-        ApiResponse<Void> response = ApiResponse.<Void>builder()
-                .requestId(UUID.randomUUID())
-                .statusCode(HttpStatus.NO_CONTENT.value())
-                .message("Address deleted successfully")
-                .build();
-        return ResponseEntity.noContent().build();
+        UUID userId = securityUtils.getCurrentUserId();
+        addressService.deleteAddress(userId, addressId);
+        return ResponseEntity.ok(ApiResponse.success(null));
     }
 
     @PatchMapping("/addresses/{addressId}/default")
     public ResponseEntity<ApiResponse<AddressResponse>> setDefaultAddress(@PathVariable UUID addressId) {
-        AddressResponse updatedAddress = addressService.setDefaultAddress(addressId);
-        ApiResponse<AddressResponse> response = ApiResponse.<AddressResponse>builder()
-                .requestId(UUID.randomUUID())
-                .statusCode(HttpStatus.OK.value())
-                .message("Default address updated successfully")
-                .data(updatedAddress)
-                .build();
-        return ResponseEntity.ok(response);
+        UUID userId = securityUtils.getCurrentUserId();
+        AddressResponse updatedAddress = addressService.setDefaultAddress(userId, addressId);
+        return ResponseEntity.ok(ApiResponse.success(updatedAddress));
     }
 }

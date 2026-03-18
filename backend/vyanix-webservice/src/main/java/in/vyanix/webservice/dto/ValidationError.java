@@ -14,4 +14,11 @@ import lombok.Setter;
 public class ValidationError {
     private String field;
     private String message;
+
+    public static ValidationError of(String field, String message) {
+        ValidationError error = new ValidationError();
+        error.field = field;
+        error.message = message;
+        return error;
+    }
 }

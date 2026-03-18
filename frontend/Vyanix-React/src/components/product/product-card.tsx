@@ -8,30 +8,52 @@ import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Product } from '@/lib/types';
 import { useCart } from '@/hooks/use-cart';
+import { useAuth } from '@/hooks/use-auth';
 import { useToast } from '@/hooks/use-toast';
+import { useRouter } from 'next/navigation';
 
 interface ProductCardProps {
   product: Product;
 }
 
 export function ProductCard({ product }: ProductCardProps) {
-  const { addToCart } = useCart();
+  const { addProductToCart } = useCart();
+  const { isAuthenticated } = useAuth();
   const { toast } = useToast();
+  const router = useRouter();
 
-  const handleAddToCart = (e: React.MouseEvent) => {
+  const handleAddToCart = async (e: React.MouseEvent) => {
     e.preventDefault();
-    addToCart(product);
-    toast({
-      title: "Added to cart",
-      description: `${product.name} has been added to your shopping cart.`,
-    });
+
+    if (!isAuthenticated) {
+      toast({
+        title: 'Sign in required',
+        description: 'Please sign in before adding items to your cart.',
+      });
+      router.push('/account');
+      return;
+    }
+
+    try {
+      await addProductToCart(product);
+      toast({
+        title: "Added to cart",
+        description: `${product.name} has been added to your shopping cart.`,
+      });
+    } catch (error) {
+      toast({
+        title: 'Unable to add item',
+        description: error instanceof Error ? error.message : 'Please try again.',
+        variant: 'destructive',
+      });
+    }
   };
 
   return (
     <Card className="group overflow-hidden border-none shadow-none bg-transparent flex flex-col h-full">
-      <Link href={`/products/${product.id}`} className="block relative aspect-square overflow-hidden rounded-xl bg-secondary mb-3">
-        <Image 
-          src={product.images[0]} 
+        <Link href={`/products/${product.id}`} className="block relative aspect-square overflow-hidden rounded-xl bg-secondary mb-3">
+          <Image 
+            src={product.images[0]} 
           alt={product.name} 
           fill 
           className="object-cover transition-transform duration-500 group-hover:scale-110"
@@ -50,9 +72,9 @@ export function ProductCard({ product }: ProductCardProps) {
             <ShoppingCart className="h-4 w-4" />
           </Button>
         </div>
-        {product.stock <= 5 && product.stock > 0 && (
-          <Badge className="absolute top-3 left-3 bg-accent text-accent-foreground font-medium">Low Stock</Badge>
-        )}
+          {product.stock <= 5 && product.stock > 0 && (
+            <Badge className="absolute top-3 left-3 bg-accent text-accent-foreground font-medium">Low Stock</Badge>
+          )}
         {product.stock === 0 && (
           <Badge variant="destructive" className="absolute top-3 left-3 font-medium">Out of Stock</Badge>
         )}

@@ -16,5 +16,6 @@ import java.util.UUID;
 public class LoginResponse {
     private UUID userId;
     private String token;
+    @Builder.Default
     private String tokenType = "Bearer";
 }

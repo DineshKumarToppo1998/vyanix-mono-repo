@@ -5,7 +5,7 @@ import lombok.Getter;
 import lombok.Setter;
 
 import java.math.BigDecimal;
-import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Entity
@@ -31,6 +31,6 @@ public class Sku {
     private Product product;
 
     @OneToMany(mappedBy = "sku", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<SkuOptionValue> optionValues;
+    private Set<SkuOptionValue> optionValues;
 
 }

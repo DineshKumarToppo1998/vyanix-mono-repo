@@ -53,8 +53,8 @@ public class AddressService {
     }
 
     @Transactional
-    public AddressResponse updateAddress(UUID addressId, Address addressUpdates) {
-        Address address = addressRepository.findById(addressId)
+    public AddressResponse updateAddress(UUID userId, UUID addressId, Address addressUpdates) {
+        Address address = addressRepository.findByIdAndUserId(addressId, userId)
                 .orElseThrow(() -> new ResourceNotFoundException(Address.class, addressId));
 
         address.setLine1(addressUpdates.getLine1());
@@ -68,19 +68,19 @@ public class AddressService {
     }
 
     @Transactional
-    public void deleteAddress(UUID addressId) {
-        addressRepository.findById(addressId)
+    public void deleteAddress(UUID userId, UUID addressId) {
+        Address address = addressRepository.findByIdAndUserId(addressId, userId)
                 .orElseThrow(() -> new ResourceNotFoundException(Address.class, addressId));
-        addressRepository.deleteById(addressId);
+        addressRepository.delete(address);
     }
 
     @Transactional
-    public AddressResponse setDefaultAddress(UUID addressId) {
-        Address address = addressRepository.findById(addressId)
+    public AddressResponse setDefaultAddress(UUID userId, UUID addressId) {
+        Address address = addressRepository.findByIdAndUserId(addressId, userId)
                 .orElseThrow(() -> new ResourceNotFoundException(Address.class, addressId));
 
         // Remove default from all other addresses
-        List<Address> userAddresses = addressRepository.findByUserId(address.getUser().getId());
+        List<Address> userAddresses = addressRepository.findByUserId(userId);
         userAddresses.forEach(a -> a.setIsDefault(false));
 
         address.setIsDefault(true);

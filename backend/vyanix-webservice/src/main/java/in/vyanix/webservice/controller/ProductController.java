@@ -35,62 +35,31 @@ public class ProductController {
             products = productService.getAllProducts(pageable);
         }
 
-        ApiResponse<Page<ProductResponse>> response = ApiResponse.<Page<ProductResponse>>builder()
-                .requestId(UUID.randomUUID())
-                .statusCode(HttpStatus.OK.value())
-                .message("Products retrieved successfully")
-                .data(products)
-                .build();
-
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(ApiResponse.success(products));
     }
 
     @GetMapping("/products/{id}")
     public ResponseEntity<ApiResponse<ProductResponse>> getProductById(@PathVariable UUID id) {
         ProductResponse product = productService.getProductById(id);
-        ApiResponse<ProductResponse> response = ApiResponse.<ProductResponse>builder()
-                .requestId(UUID.randomUUID())
-                .statusCode(HttpStatus.OK.value())
-                .message("Product retrieved successfully")
-                .data(product)
-                .build();
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(ApiResponse.success(product));
     }
 
     @GetMapping("/products/slug/{slug}")
     public ResponseEntity<ApiResponse<ProductResponse>> getProductBySlug(@PathVariable String slug) {
         ProductResponse product = productService.getProductBySlug(slug);
-        ApiResponse<ProductResponse> response = ApiResponse.<ProductResponse>builder()
-                .requestId(UUID.randomUUID())
-                .statusCode(HttpStatus.OK.value())
-                .message("Product retrieved successfully")
-                .data(product)
-                .build();
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(ApiResponse.success(product));
     }
 
     @GetMapping("/categories")
     public ResponseEntity<ApiResponse<List<CategoryResponse>>> getAllCategories() {
         List<CategoryResponse> categories = productService.getAllCategories();
-        ApiResponse<List<CategoryResponse>> response = ApiResponse.<List<CategoryResponse>>builder()
-                .requestId(UUID.randomUUID())
-                .statusCode(HttpStatus.OK.value())
-                .message("Categories retrieved successfully")
-                .data(categories)
-                .build();
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(ApiResponse.success(categories));
     }
 
     @GetMapping("/categories/{slug}/products")
     public ResponseEntity<ApiResponse<List<ProductResponse>>> getProductsByCategorySlug(@PathVariable String slug) {
         List<ProductResponse> products = productService.getProductsByCategorySlug(slug);
-        ApiResponse<List<ProductResponse>> response = ApiResponse.<List<ProductResponse>>builder()
-                .requestId(UUID.randomUUID())
-                .statusCode(HttpStatus.OK.value())
-                .message("Products retrieved successfully")
-                .data(products)
-                .build();
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(ApiResponse.success(products));
     }
 
     @GetMapping("/products/search")
@@ -98,24 +67,12 @@ public class ProductController {
             @RequestParam String q,
             Pageable pageable) {
         Page<ProductResponse> products = productService.searchProducts(q, pageable);
-        ApiResponse<Page<ProductResponse>> response = ApiResponse.<Page<ProductResponse>>builder()
-                .requestId(UUID.randomUUID())
-                .statusCode(HttpStatus.OK.value())
-                .message("Products searched successfully")
-                .data(products)
-                .build();
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(ApiResponse.success(products));
     }
 
     @GetMapping("/products/related/{productId}")
     public ResponseEntity<ApiResponse<List<ProductResponse>>> getRelatedProducts(@PathVariable UUID productId) {
         List<ProductResponse> products = productService.getRelatedProducts(productId);
-        ApiResponse<List<ProductResponse>> response = ApiResponse.<List<ProductResponse>>builder()
-                .requestId(UUID.randomUUID())
-                .statusCode(HttpStatus.OK.value())
-                .message("Related products retrieved successfully")
-                .data(products)
-                .build();
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(ApiResponse.success(products));
     }
 }

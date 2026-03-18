@@ -25,63 +25,34 @@ public class CartController {
     public ResponseEntity<ApiResponse<CartResponse>> getCart() {
         UUID userId = securityUtils.getCurrentUserId();
         CartResponse cart = cartService.getOrCreateCart(userId);
-        ApiResponse<CartResponse> response = ApiResponse.<CartResponse>builder()
-                .requestId(UUID.randomUUID())
-                .statusCode(HttpStatus.OK.value())
-                .message("Cart retrieved successfully")
-                .data(cart)
-                .build();
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(ApiResponse.success(cart));
     }
 
     @PostMapping("/cart/items")
     public ResponseEntity<ApiResponse<CartResponse>> addToCart(@Valid @RequestBody CartItemUpdateRequest request) {
         UUID userId = securityUtils.getCurrentUserId();
         CartResponse cart = cartService.addToCart(userId, request.skuId(), request.quantity());
-        ApiResponse<CartResponse> response = ApiResponse.<CartResponse>builder()
-                .requestId(UUID.randomUUID())
-                .statusCode(HttpStatus.CREATED.value())
-                .message("Item added to cart successfully")
-                .data(cart)
-                .build();
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.success(cart));
     }
 
     @PutMapping("/cart/items/{itemId}")
-    public ResponseEntity<ApiResponse<CartResponse>> updateCartItem(@PathVariable UUID itemId, @Valid @RequestBody CartItemUpdateRequest request) {
+    public ResponseEntity<ApiResponse<CartResponse>> updateCartItem(@PathVariable UUID itemId, @Valid @RequestBody CartItemQuantityUpdateRequest request) {
         UUID userId = securityUtils.getCurrentUserId();
         CartResponse cart = cartService.updateCartItem(userId, itemId, request.quantity());
-        ApiResponse<CartResponse> response = ApiResponse.<CartResponse>builder()
-                .requestId(UUID.randomUUID())
-                .statusCode(HttpStatus.OK.value())
-                .message("Cart item updated successfully")
-                .data(cart)
-                .build();
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(ApiResponse.success(cart));
     }
 
     @DeleteMapping("/cart/items/{itemId}")
     public ResponseEntity<ApiResponse<CartResponse>> removeFromCart(@PathVariable UUID itemId) {
         UUID userId = securityUtils.getCurrentUserId();
         CartResponse cart = cartService.removeFromCart(userId, itemId);
-        ApiResponse<CartResponse> response = ApiResponse.<CartResponse>builder()
-                .requestId(UUID.randomUUID())
-                .statusCode(HttpStatus.OK.value())
-                .message("Item removed from cart successfully")
-                .data(cart)
-                .build();
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(ApiResponse.success(cart));
     }
 
     @DeleteMapping("/cart/clear")
     public ResponseEntity<ApiResponse<Void>> clearCart() {
         UUID userId = securityUtils.getCurrentUserId();
         cartService.clearCart(userId);
-        ApiResponse<Void> response = ApiResponse.<Void>builder()
-                .requestId(UUID.randomUUID())
-                .statusCode(HttpStatus.NO_CONTENT.value())
-                .message("Cart cleared successfully")
-                .build();
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(ApiResponse.success(null));
     }
 }

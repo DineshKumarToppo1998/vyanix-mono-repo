@@ -1,14 +1,15 @@
 spring:
   application:
     name: vyanix-webservice
-
-
-
   datasource:
-    url: jdbc:postgresql://aws-1-ap-southeast-1.pooler.supabase.com:6543/postgres
-    username: postgres.pktrqykpjbwxbadgceor
-    password: Supabase#Vyanix@2026
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
     driver-class-name: org.postgresql.Driver
+    hikari:
+      data-source-properties:
+        prepareThreshold: 0
+        preferQueryMode: simple
 
   jpa:
     hibernate:
@@ -18,8 +19,27 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         id:
           new_generator_mappings: true
-    show-sql: true # Optional: prints SQL to console
+    open-in-view: false
+    show-sql: false
 
 jwt:
-  secret: mysupersecretmysupersecretmysupersecret123456
-  expiration-ms: 300000
+  secret: ${JWT_SECRET}
+  expiration-ms: ${JWT_EXPIRATION_MS:300000}
+
+app:
+  cors:
+    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:9002}
+
+logging:
+  pattern:
+    console: "%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %5p [%X{requestId:-N/A}] --- [%15.15t] %-40.40logger{39} : %m%n%wEx"
+
+# Spring Actuator
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  health:
+    redis:
+      enabled: false
