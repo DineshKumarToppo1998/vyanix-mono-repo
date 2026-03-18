@@ -199,7 +199,7 @@ export interface Order {
   orderNumber: string;
   userId: string;
   status: string;
-  shippingAddress: Address;
+  shippingAddress?: Address | null;
   items: OrderItem[];
   subtotal: number;
   tax: number;

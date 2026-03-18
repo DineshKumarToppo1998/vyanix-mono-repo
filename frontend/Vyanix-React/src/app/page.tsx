@@ -13,7 +13,7 @@ export const dynamic = 'force-dynamic';
 
 export default async function Home() {
   const [productsPage, categories] = await Promise.all([
-    fetchPublicProducts('/products?size=8'),
+    fetchPublicProducts('?size=8'),
     fetchPublicCategories(),
   ]);
 

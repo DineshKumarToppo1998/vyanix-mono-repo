@@ -6,7 +6,7 @@ import { fetchPublicProducts } from '@/lib/storefront';
 export const dynamic = 'force-dynamic';
 
 export default async function ShopPage() {
-  const productsPage = await fetchPublicProducts('/products?size=24');
+  const productsPage = await fetchPublicProducts('?size=24');
 
   return (
     <div className="min-h-screen flex flex-col">

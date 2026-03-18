@@ -12,7 +12,10 @@ import type {
 } from './types';
 
 export function getApiBaseUrl() {
-  return '/api';
+  if (typeof window === 'undefined') {
+    return process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080/api';
+  }
+  return process.env.NEXT_PUBLIC_API_BASE_URL || '/api';
 }
 
 export function getFallbackCategoryImage(slug: string) {
@@ -50,6 +53,9 @@ export function normalizeProduct(product: ApiProduct): Product {
     tags: product.tags ?? [],
     minPrice: product.minPrice ? Number(product.minPrice) : null,
     maxPrice: product.maxPrice ? Number(product.maxPrice) : null,
+    defaultSkuId: defaultSku?.id,
+    skus: product.skus,
+    options: product.options,
   };
 }
 
@@ -79,14 +85,16 @@ export function normalizeCart(cart: any): Cart {
   return {
     id: cart.id,
     userId: cart.userId,
+    subtotal: cart.subtotal ? Number(cart.subtotal) : 0,
+    itemCount: cart.items?.length ?? 0,
+    createdAt: cart.createdAt ?? new Date().toISOString(),
+    updatedAt: cart.updatedAt ?? new Date().toISOString(),
     items: cart.items?.map((item: any) => ({
       id: item.id,
       skuId: item.skuId,
       quantity: item.quantity,
       price: Number(item.price),
     })) ?? [],
-    subtotal: cart.subtotal ? Number(cart.subtotal) : 0,
-    createdAt: cart.createdAt,
   };
 }
 
@@ -94,14 +102,14 @@ export function normalizeAddress(address: any): Address {
   return {
     id: address.id,
     userId: address.userId,
-    fullName: address.fullName,
-    phone: address.phone,
-    addressLine1: address.addressLine1,
-    addressLine2: address.addressLine2,
+    line1: address.line1,
+    line2: address.line2 ?? null,
     city: address.city,
     state: address.state,
-    pincode: address.pincode,
     country: address.country,
+    postalCode: address.postalCode,
+    fullName: address.fullName,
+    phone: address.phone,
     isDefault: address.isDefault,
   };
 }
@@ -109,33 +117,43 @@ export function normalizeAddress(address: any): Address {
 export function normalizeOrder(order: any): Order {
   return {
     id: order.id,
+    orderNumber: order.orderNumber ?? '',
     userId: order.userId,
     status: order.status,
+    shippingAddress: order.shippingAddress ? normalizeAddress(order.shippingAddress) : null,
+    items: order.orderItems?.map((item: any) => ({
+      id: item.id,
+      orderId: order.id,
+      productId: item.productId ?? item.skuId,
+      skuId: item.skuId,
+      productName: item.productName ?? '',
+      productSlug: item.productSlug ?? '',
+      productImage: item.productImage ?? '',
+      skuCode: item.skuCode ?? '',
+      price: Number(item.price),
+      quantity: item.quantity,
+      subtotal: Number(item.subtotal ?? item.price * item.quantity),
+    })) ?? [],
     subtotal: order.subtotal ? Number(order.subtotal) : 0,
     tax: order.tax ? Number(order.tax) : 0,
     shippingCost: order.shippingCost ? Number(order.shippingCost) : 0,
     totalAmount: order.totalAmount ? Number(order.totalAmount) : 0,
-    shippingAddress: order.shippingAddress ? normalizeAddress(order.shippingAddress) : null,
-    orderItems: order.orderItems?.map((item: any) => ({
-      id: item.id,
-      skuId: item.skuId,
-      productId: item.productId,
-      quantity: item.quantity,
-      price: Number(item.price),
-    })) ?? [],
     payment: order.payment ? {
       id: order.payment.id,
+      orderId: order.id,
       amount: Number(order.payment.amount),
       status: order.payment.status,
       transactionId: order.payment.transactionId,
-      paymentProvider: order.payment.paymentProvider,
+      paymentProvider: order.payment.paymentProvider ?? 'unknown',
+      createdAt: order.payment.createdAt ?? new Date().toISOString(),
     } : null,
     createdAt: order.createdAt,
   };
 }
 
 export async function fetchPublicProducts(query?: string) {
-  const url = query ? `/api/products${query}` : '/api/products';
+  const base = getApiBaseUrl();
+  const url = query ? `${base}/products${query}` : `${base}/products`;
   const response = await fetch(url, { method: 'GET' });
   const data = await response.json();
   return {
@@ -148,13 +166,13 @@ export async function fetchPublicProducts(query?: string) {
 }
 
 export async function fetchPublicCategories() {
-  const response = await fetch('/api/categories', { method: 'GET' });
+  const response = await fetch(`${getApiBaseUrl()}/categories`, { method: 'GET' });
   const data = await response.json();
   return (data.data ?? []).map(normalizeCategory);
 }
 
 export async function fetchPublicCategoryProducts(slug: string) {
-  const response = await fetch(`/api/categories/${slug}/products`, { method: 'GET' });
+  const response = await fetch(`${getApiBaseUrl()}/categories/${slug}/products`, { method: 'GET' });
   const data = await response.json();
   return (data.data ?? []).map(normalizeProduct);
 }

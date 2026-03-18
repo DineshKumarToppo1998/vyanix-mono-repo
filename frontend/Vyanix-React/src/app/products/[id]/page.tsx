@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic';
 export default async function ProductPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
-  const productsPage = await fetchPublicProducts(`/products/slug/${id}`);
+  const productsPage = await fetchPublicProducts(`/slug/${id}`);
   const product = productsPage.data.content[0];
 
   if (!product) {
