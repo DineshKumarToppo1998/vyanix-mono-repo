@@ -50,7 +50,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(response.data);
     } catch (error) {
       logout();
-      throw error;
     }
   }, [logout]);
 
@@ -64,7 +63,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         setToken(storedToken);
-        await refreshUser();
+        try {
+          await refreshUser();
+        } catch (error) {
+          // Token invalid, already logged out by refreshUser
+        }
       } finally {
         setLoading(false);
       }

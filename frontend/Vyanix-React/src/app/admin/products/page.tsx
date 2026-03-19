@@ -4,7 +4,6 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { adminApi } from '@/lib/api/admin';
-import { getQueryClient } from '@/lib/query-client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,18 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatCurrency } from '@/lib/utils';
 
-const ProductsPage = async () => {
-  const queryClient = getQueryClient();
-
-  await queryClient.prefetchQuery({
-    queryKey: ['products', { search: '', page: 0, size: 10 }],
-    queryFn: () => adminApi.getProducts({ page: 0, size: 10 }),
-  });
-
-  return <ProductsClient />;
-};
-
-const ProductsClient = () => {
+export default function ProductsPage() {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(0);
   const [size, setSize] = useState(10);
@@ -161,6 +149,4 @@ const ProductsClient = () => {
       </Card>
     </div>
   );
-};
-
-export default ProductsPage;
+}

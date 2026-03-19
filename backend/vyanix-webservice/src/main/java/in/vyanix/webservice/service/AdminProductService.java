@@ -22,6 +22,8 @@ import in.vyanix.webservice.repository.ProductRepository;
 import in.vyanix.webservice.repository.SkuRepository;
 import in.vyanix.webservice.service.exception.BadRequestException;
 import in.vyanix.webservice.service.exception.ResourceNotFoundException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -56,6 +58,25 @@ public class AdminProductService {
         this.skuRepository = skuRepository;
         this.productMapper = productMapper;
         this.skuMapper = skuMapper;
+    }
+
+    @Transactional(readOnly = true)
+    public Page<ProductResponse> getAllProducts(Pageable pageable) {
+        return productRepository.findAll(pageable).map(productMapper::mapToListingResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<ProductResponse> searchProducts(String search, Pageable pageable) {
+        if (search == null || search.isBlank()) {
+            return getAllProducts(pageable);
+        }
+        return productRepository.searchByName(search, pageable).map(productMapper::mapToListingResponse);
+    }
+
+    @Transactional(readOnly = true)
+    public ProductResponse getProductById(UUID id) {
+        Product product = loadProduct(id);
+        return productMapper.mapToResponse(product);
     }
 
     @Transactional
@@ -161,6 +182,128 @@ public class AdminProductService {
         sku.setStock(request.stock());
         skuRepository.save(sku);
         return skuMapper.mapToResponse(sku);
+    }
+
+    @Transactional
+    public ProductResponse updateProduct(UUID id, AdminProductCreateRequest request) {
+        Product product = loadProduct(id);
+
+        // Check if slug is being changed and if it already exists
+        if (!product.getSlug().equals(request.slug())) {
+            if (productRepository.findBySlug(request.slug()).isPresent()) {
+                throw new BadRequestException("Product slug already exists: " + request.slug());
+            }
+        }
+
+        Category category = categoryRepository.findById(request.categoryId())
+                .orElseThrow(() -> new ResourceNotFoundException(Category.class, request.categoryId()));
+
+        product.setName(request.name());
+        product.setSlug(request.slug());
+        product.setDescription(request.description());
+        product.setCategory(category);
+        if (request.rating() != null) {
+            product.setRating(request.rating());
+        }
+        if (request.reviewsCount() != null) {
+            product.setReviewsCount(request.reviewsCount());
+        }
+
+        Product updatedProduct = productRepository.save(product);
+        return productMapper.mapToResponse(loadProduct(updatedProduct.getId()));
+    }
+
+    @Transactional
+    public void deleteProduct(UUID id) {
+        Product product = loadProduct(id);
+        productRepository.delete(product);
+    }
+
+    @Transactional
+    public ProductResponse updateOption(UUID productId, UUID optionId, ProductOptionCreateRequest request) {
+        Product product = loadProduct(productId);
+
+        ProductOption option = product.getOptions().stream()
+                .filter(opt -> opt.getId().equals(optionId))
+                .findFirst()
+                .orElseThrow(() -> new ResourceNotFoundException(ProductOption.class, optionId));
+
+        option.setName(request.name());
+
+        // Update option values
+        if (request.values() != null && !request.values().isEmpty()) {
+            Set<ProductOptionValue> existingValues = option.getValues();
+            Set<String> newValues = new LinkedHashSet<>(request.values());
+
+            // Remove values that are no longer present
+            existingValues.removeIf(v -> !newValues.contains(v.getValue()));
+
+            // Add new values
+            for (String value : newValues) {
+                boolean exists = existingValues.stream()
+                        .anyMatch(v -> v.getValue().equals(value));
+                if (!exists) {
+                    ProductOptionValue optionValue = new ProductOptionValue();
+                    optionValue.setOption(option);
+                    optionValue.setValue(value.trim());
+                    existingValues.add(optionValue);
+                }
+            }
+        }
+
+        productRepository.save(product);
+        return productMapper.mapToResponse(loadProduct(productId));
+    }
+
+    @Transactional
+    public void deleteOption(UUID productId, UUID optionId) {
+        Product product = loadProduct(productId);
+
+        ProductOption option = product.getOptions().stream()
+                .filter(opt -> opt.getId().equals(optionId))
+                .findFirst()
+                .orElseThrow(() -> new ResourceNotFoundException(ProductOption.class, optionId));
+
+        product.getOptions().remove(option);
+        productRepository.save(product);
+    }
+
+    @Transactional
+    public ProductResponse updateSku(UUID productId, UUID skuId, SkuCreateRequest request) {
+        Product product = loadProduct(productId);
+
+        Sku sku = product.getSkus().stream()
+                .filter(s -> s.getId().equals(skuId))
+                .findFirst()
+                .orElseThrow(() -> new ResourceNotFoundException(Sku.class, skuId));
+
+        // Check if SKU code is being changed and if it already exists
+        if (!sku.getSkuCode().equals(request.skuCode())) {
+            if (skuRepository.findBySkuCode(request.skuCode()).isPresent()) {
+                throw new BadRequestException("SKU code already exists: " + request.skuCode());
+            }
+        }
+
+        sku.setSkuCode(request.skuCode());
+        sku.setPrice(request.price());
+        sku.setStock(request.stock());
+        sku.setWeight(request.weight());
+
+        productRepository.save(product);
+        return productMapper.mapToResponse(loadProduct(productId));
+    }
+
+    @Transactional
+    public void deleteSku(UUID productId, UUID skuId) {
+        Product product = loadProduct(productId);
+
+        Sku sku = product.getSkus().stream()
+                .filter(s -> s.getId().equals(skuId))
+                .findFirst()
+                .orElseThrow(() -> new ResourceNotFoundException(Sku.class, skuId));
+
+        product.getSkus().remove(sku);
+        productRepository.save(product);
     }
 
     private Product loadProduct(UUID productId) {

@@ -7,6 +7,9 @@ RUN mvn -B clean package -DskipTests
 
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
+RUN apk add --no-cache wget
 COPY --from=builder /build/target/*.jar app.jar
 EXPOSE 8080
+HEALTHCHECK --interval=10s --timeout=5s --start-period=40s --retries=5 \
+    CMD wget -q --spider http://localhost:8080/health || exit 1
 ENTRYPOINT ["java", "-jar", "app.jar"]

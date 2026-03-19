@@ -36,9 +36,7 @@ public class ApiResponse<T> {
     }
 
     public static ApiResponse<Void> error(String message, List<ValidationError> errors) {
-        ApiResponse<Void> response = new ApiResponse<>();
-        response.success = false;
-        response.message = message;
+        ApiResponse<Void> response = error(message);
         response.errors = errors;
         return response;
     }

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { LayoutDashboard } from 'lucide-react';
 
 import { Footer } from '@/components/layout/footer';
 import { Header } from '@/components/layout/header';
@@ -50,6 +51,8 @@ export default function AccountPage() {
     }
   };
 
+  const isAdmin = user?.role === 'ADMIN';
+
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
@@ -65,6 +68,14 @@ export default function AccountPage() {
                 <Button asChild>
                   <Link href="/account/orders">View orders</Link>
                 </Button>
+                {isAdmin && (
+                  <Button asChild variant="outline">
+                    <Link href="/admin/dashboard" className="flex items-center gap-2">
+                      <LayoutDashboard className="h-4 w-4" />
+                      Dashboard
+                    </Link>
+                  </Button>
+                )}
                 <Button variant="outline" onClick={logout}>Sign out</Button>
               </div>
             </div>

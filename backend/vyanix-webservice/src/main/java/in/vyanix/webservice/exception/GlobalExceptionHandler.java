@@ -1,4 +1,4 @@
-package in.vyanix.webservice.config;
+package in.vyanix.webservice.exception;
 
 import in.vyanix.webservice.dto.ApiErrorResponse;
 import in.vyanix.webservice.dto.ValidationError;

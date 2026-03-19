@@ -3,14 +3,13 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { adminApi } from '@/lib/api/admin';
-import { getQueryClient, serverQueryClient } from '@/lib/query-client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Edit, Trash2, Plus } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
@@ -118,20 +117,7 @@ const CategoryRow = ({
   );
 };
 
-const CATEGORIES_PAGE = 'CATEGORIES_PAGE';
-
-const CategoriesPage = async () => {
-  const queryClient = getQueryClient();
-
-  await queryClient.prefetchQuery({
-    queryKey: ['categories'],
-    queryFn: () => adminApi.getCategories(),
-  });
-
-  return <CategoriesClient />;
-};
-
-const CategoriesClient = () => {
+export default function CategoriesPage() {
   const [categoriesData, setCategoriesData] = useState<any[]>([]);
   const [treeData, setTreeData] = useState<CategoryTree[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<CategoryTree | null>(null);
@@ -419,14 +405,14 @@ const CategoriesClient = () => {
                 Parent Category
               </label>
               <Select
-                value={formState.parentId}
-                onValueChange={(value) => setFormState((prev) => ({ ...prev, parentId: value }))}
+                value={formState.parentId || 'none'}
+                onValueChange={(value) => setFormState((prev) => ({ ...prev, parentId: value === 'none' ? undefined : value }))}
               >
                 <SelectTrigger id="parentId" className="h-10">
                   <SelectValue placeholder="Select parent category (optional)" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">None (Root Category)</SelectItem>
+                  <SelectItem value="none">None (Root Category)</SelectItem>
                   {categoriesData
                     .filter((c) => c.id !== selectedCategory?.id)
                     .map((cat) => (
@@ -459,6 +445,4 @@ const CategoriesClient = () => {
       </Dialog>
     </div>
   );
-};
-
-export default CategoriesPage;
+}
