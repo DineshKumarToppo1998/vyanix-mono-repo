@@ -38,8 +38,8 @@ export function AdminSidebar() {
     <Sidebar collapsible="icon">
       <SidebarHeader className="h-16 flex items-center px-4 border-b">
         <div className="flex items-center gap-2 font-bold text-primary">
-          <div className="bg-primary text-white p-1 rounded">CC</div>
-          <span className="group-data-[collapsible=icon]:hidden">CommerceControl</span>
+          <div className="bg-primary text-white p-1 rounded">V</div>
+          <span className="group-data-[collapsible=icon]:hidden">Vyanix</span>
         </div>
       </SidebarHeader>
       <SidebarContent className="p-2">

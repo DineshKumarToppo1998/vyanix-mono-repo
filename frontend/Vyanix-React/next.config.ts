@@ -83,6 +83,11 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  allowedDevOrigins: [
+    "http://192.168.29.215:9002",
+    "http://localhost:9002",
+    "http://nginx:80"
+  ],
 };
 
 export default nextConfig;

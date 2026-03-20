@@ -42,6 +42,7 @@ public class ProductMapper {
                 .minPrice(calculateMinPrice(product.getSkus()))
                 .maxPrice(calculateMaxPrice(product.getSkus()))
                 .stock(calculateTotalStock(product.getSkus()))
+                .createdAt(product.getCreatedAt())
                 .build();
     }
 

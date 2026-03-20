@@ -3,6 +3,7 @@ import type {
   ApiProduct,
   ApiResponse,
   AuthSession,
+  AuthRefreshResponse,
   Cart,
   Category,
   LoginRequest,
@@ -10,6 +11,7 @@ import type {
   PageResponse,
   Product,
   RegisterRequest,
+  SessionInfo,
   User,
 } from '../types';
 import {
@@ -22,20 +24,84 @@ import {
   normalizeUser,
 } from '../storefront';
 
-function getAuthToken() {
+const AUTH_TOKEN_KEY = 'authToken';
+const CSRF_COOKIE_NAME = 'XSRF-TOKEN';
+const CSRF_HEADER_NAME = 'X-XSRF-TOKEN';
+
+/**
+ * Module-level variable to store access token in memory
+ * This allows the api-client to access the token without relying on React state
+ * Updated by auth-context.tsx via setAccessTokenInMemory()
+ */
+let accessTokenInMemory: string | null = null;
+
+/**
+ * Get the current access token from memory
+ * Called by request interceptor on every request to get fresh token
+ */
+export function getAccessTokenInMemory(): string | null {
+  return accessTokenInMemory;
+}
+
+/**
+ * Set the access token in memory
+ * Called by auth-context.tsx after login/refresh
+ */
+export function setAccessTokenInMemory(token: string | null): void {
+  accessTokenInMemory = token;
+}
+
+/**
+ * Get CSRF token from cookie
+ */
+function getCsrfToken(): string | null {
+  if (typeof window === 'undefined') return null;
+
+  const match = document.cookie
+    .split('; ')
+    .find(row => row.startsWith(`${CSRF_COOKIE_NAME}=`));
+
+  return match ? match.split('=')[1] : null;
+}
+
+/**
+ * Get auth token from memory
+ * Always reads fresh value at request time - never cached
+ * 
+ * SECURITY: Memory-only storage (no localStorage)
+ * - Prevents XSS token theft
+ * - After page refresh, token is restored via /auth/refresh endpoint
+ * - Uses HttpOnly refresh token cookie (not accessible to JavaScript)
+ */
+function getAuthToken(): string | null {
   if (typeof window === 'undefined') {
     return null;
   }
-
-  return localStorage.getItem('authToken');
+  
+  // Read from module-level memory variable (set by auth-context)
+  return accessTokenInMemory;
 }
 
-function createHeaders(headers?: HeadersInit) {
+/**
+ * Create headers with auth and CSRF tokens
+ */
+function createHeaders(headers?: HeadersInit, includeAuth = true, includeCsrf = true) {
   const resolvedHeaders = new Headers(headers);
-  const token = getAuthToken();
+  
+  // Include auth token if requested and available
+  if (includeAuth) {
+    const token = getAuthToken();
+    if (token) {
+      resolvedHeaders.set('Authorization', `Bearer ${token}`);
+    }
+  }
 
-  if (token) {
-    resolvedHeaders.set('Authorization', `Bearer ${token}`);
+  // Include CSRF token for state-changing requests
+  if (includeCsrf) {
+    const csrfToken = getCsrfToken();
+    if (csrfToken) {
+      resolvedHeaders.set(CSRF_HEADER_NAME, csrfToken);
+    }
   }
 
   if (!resolvedHeaders.has('Content-Type')) {
@@ -45,39 +111,49 @@ function createHeaders(headers?: HeadersInit) {
   return resolvedHeaders;
 }
 
-export function createUrl(path: string, params?: Record<string, string | number | undefined>) {
-  const url = new URL(`${getApiBaseUrl()}${path}`);
-
-  if (!params) {
-    return url;
-  }
-
-  for (const [key, value] of Object.entries(params)) {
-    if (value !== undefined && value !== '') {
-      url.searchParams.set(key, String(value));
-    }
-  }
-
-  return url;
+/**
+ * API error with code for frontend handling
+ */
+export interface ApiError extends Error {
+  status?: number;
+  code?: string;
+  payload?: ApiResponse<unknown>;
 }
 
-export async function request<T>(path: string, init?: RequestInit): Promise<ApiResponse<T>> {
+/**
+ * Make API request with error handling
+ */
+export async function request<T>(
+  path: string,
+  init?: RequestInit,
+  includeAuth = true,
+  includeCsrf = true
+): Promise<ApiResponse<T>> {
   const response = await fetch(`${getApiBaseUrl()}${path}`, {
     ...init,
-    headers: createHeaders(init?.headers),
+    headers: createHeaders(init?.headers, includeAuth, includeCsrf),
   });
 
   const isJson = response.headers.get('content-type')?.includes('application/json');
-  const payload = isJson ? ((await response.json()) as ApiResponse<T>) : null;
+  const payload = isJson ? ((await response.json()) as ApiResponse<T>) : undefined;
 
   if (!response.ok) {
-    throw new Error(payload?.message ?? 'Request failed');
+    const error = new Error(payload?.message ?? 'Request failed') as ApiError;
+    error.status = response.status;
+    error.payload = payload;
+    error.code = (payload as any)?.code;  // Extract error code
+    throw error;
   }
 
   return payload ?? ({ success: true, data: null as T } satisfies ApiResponse<T>);
 }
 
+/**
+ * API client with all endpoints
+ */
 export const apiClient = {
+  // ============ Product Endpoints ============
+  
   getProducts: async (params?: {
     categorySlug?: string;
     search?: string;
@@ -133,25 +209,69 @@ export const apiClient = {
     } satisfies ApiResponse<PageResponse<Product>>;
   },
 
+  // ============ Auth Endpoints ============
+
   register: async (payload: RegisterRequest) => {
-    const response = await request<User>('/auth/register', {
+    return request<User>('/auth/register', {
       method: 'POST',
       body: JSON.stringify(payload),
-    });
-    return { ...response, data: normalizeUser(response.data) } satisfies ApiResponse<User>;
+    }, false, false);  // No auth, no CSRF for register
   },
 
   login: async (payload: LoginRequest) => {
     return request<AuthSession>('/auth/login', {
       method: 'POST',
       body: JSON.stringify(payload),
-    });
+    }, false, false);  // No auth, no CSRF for login
+  },
+
+  /**
+   * Refresh access token using refresh token cookie
+   */
+  refreshAccessToken: async () => {
+    return request<AuthRefreshResponse>('/auth/refresh', {
+      method: 'POST',
+    }, false, true);  // No auth header, but include CSRF
+  },
+
+  /**
+   * Logout - revoke refresh token and clear cookie
+   */
+  logout: async () => {
+    return request<null>('/auth/logout', {
+      method: 'POST',
+    }, true, true);
+  },
+
+  /**
+   * Logout from all devices
+   */
+  logoutFromAllDevices: async () => {
+    return request<null>('/auth/logout/all', {
+      method: 'POST',
+    }, true, true);
   },
 
   getCurrentUser: async () => {
     const response = await request<User>('/auth/me', { method: 'GET' });
     return { ...response, data: normalizeUser(response.data) } satisfies ApiResponse<User>;
   },
+
+  /**
+   * Get active sessions for current user
+   */
+  getActiveSessions: async () => {
+    return request<SessionInfo[]>('/auth/sessions', { method: 'GET' });
+  },
+
+  /**
+   * Revoke specific session
+   */
+  revokeSession: async (sessionId: string) => {
+    return request<null>(`/auth/sessions/${sessionId}`, { method: 'DELETE' });
+  },
+
+  // ============ Cart Endpoints ============
 
   getCart: async () => {
     const response = await request<any>('/cart', { method: 'GET' });
@@ -185,6 +305,8 @@ export const apiClient = {
     return request<null>('/cart/clear', { method: 'DELETE' });
   },
 
+  // ============ Order Endpoints ============
+
   createOrder: async (
     address: Address,
     items: { skuId: string; quantity: number }[],
@@ -211,6 +333,8 @@ export const apiClient = {
     return { ...response, data: normalizeOrder(response.data) } satisfies ApiResponse<Order>;
   },
 
+  // ============ Address Endpoints ============
+
   getAddresses: async () => {
     const response = await request<any[]>('/addresses', { method: 'GET' });
     return { ...response, data: response.data.map(normalizeAddress) } satisfies ApiResponse<Address[]>;
@@ -236,3 +360,22 @@ export const apiClient = {
     return request<null>(`/addresses/${addressId}`, { method: 'DELETE' });
   },
 };
+
+/**
+ * Create URL with query params
+ */
+export function createUrl(path: string, params?: Record<string, string | number | undefined>) {
+  const url = new URL(`${getApiBaseUrl()}${path}`);
+
+  if (!params) {
+    return url;
+  }
+
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== '') {
+      url.searchParams.set(key, String(value));
+    }
+  }
+
+  return url;
+}

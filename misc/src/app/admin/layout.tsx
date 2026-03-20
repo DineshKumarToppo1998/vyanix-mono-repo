@@ -38,7 +38,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <SidebarHeader className="h-16 flex items-center px-4 border-b">
             <div className="flex items-center gap-2 font-bold text-primary">
               <div className="bg-primary text-white p-1 rounded">CC</div>
-              <span className="group-data-[collapsible=icon]:hidden">CommerceControl</span>
+              <span className="group-data-[collapsible=icon]:hidden">Vyanix</span>
             </div>
           </SidebarHeader>
           <SidebarContent className="p-2">

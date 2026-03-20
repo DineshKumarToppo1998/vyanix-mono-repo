@@ -126,9 +126,33 @@ export interface RegisterRequest {
 }
 
 export interface AuthSession {
-  userId: string;
-  token: string;
+  accessToken: string;
   tokenType: string;
+  expiresIn: number;
+  user: User;
+}
+
+/**
+ * Refresh token response
+ */
+export interface AuthRefreshResponse {
+  accessToken: string;
+  tokenType: string;
+  expiresIn: number;
+}
+
+/**
+ * Session information for session management UI
+ */
+export interface SessionInfo {
+  sessionId: string;
+  deviceInfo: string;
+  ipAddress: string;
+  userAgent?: string;
+  createdAt: string;
+  lastUsedAt: string;
+  expiresAt: string;
+  isCurrentSession: boolean;
 }
 
 export interface Address {

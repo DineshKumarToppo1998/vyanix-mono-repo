@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -31,4 +32,5 @@ public class ProductResponse {
     private BigDecimal minPrice;
     private BigDecimal maxPrice;
     private Integer stock;
+    private LocalDateTime createdAt;
 }
