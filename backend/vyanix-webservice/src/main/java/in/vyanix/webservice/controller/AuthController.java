@@ -244,14 +244,15 @@ public class AuthController {
 
     /**
      * Create HTTP-only refresh token cookie
+     * Cookie settings configured for development (HTTP) and production (HTTPS via nginx)
      */
     private ResponseCookie createRefreshCookie(String refreshTokenValue) {
         return ResponseCookie.from("refresh_token", refreshTokenValue)
                 .httpOnly(true)
-                .secure(true)  // HTTPS only
-                .sameSite("Strict")
+                .secure(false)  // false for HTTP development; set true when behind HTTPS proxy
+                .sameSite("Lax")  // Lax allows top-level navigation POST requests
                 .maxAge(jwtTokenProvider.getRefreshExpirationMs() / 1000)
-                .path("/")
+                .path("/")  // Available to all paths
                 .build();
     }
 
@@ -261,8 +262,8 @@ public class AuthController {
     private ResponseCookie clearRefreshCookie() {
         return ResponseCookie.from("refresh_token", "")
                 .httpOnly(true)
-                .secure(true)
-                .sameSite("Strict")
+                .secure(false)
+                .sameSite("Lax")
                 .maxAge(0)
                 .path("/")
                 .build();

@@ -55,7 +55,7 @@ jwt:
 # Application Security Configuration
 app:
   cors:
-    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:9002}
+    allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost,http://localhost:3000,http://localhost:9002}
   # Migration Configuration
   # Set to 'true' after 30-day migration period to enable legacy token cleanup
   migration:

@@ -13,8 +13,10 @@ import type {
 
 export function getApiBaseUrl() {
   if (typeof window === 'undefined') {
-    return process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080/api';
+    // Server-side rendering (Next.js server)
+    return process.env.NEXT_PUBLIC_API_BASE_URL || '/api';
   }
+  // Client-side (browser) - always use relative path through nginx
   return process.env.NEXT_PUBLIC_API_BASE_URL || '/api';
 }
 
