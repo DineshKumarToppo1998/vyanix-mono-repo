@@ -7,6 +7,7 @@ import { ArrowRight, CheckCircle2, ShoppingBag, Truck } from 'lucide-react';
 import { Footer } from '@/components/layout/footer';
 import { Header } from '@/components/layout/header';
 import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { apiClient } from '@/lib/api/api-client';
 import type { Order } from '@/lib/types';
 
@@ -55,6 +56,12 @@ export function OrderConfirmationView({ orderId }: { orderId?: string }) {
               </p>
             )}
           </div>
+
+          <Alert variant="info">
+            <AlertDescription>
+              <strong>DEMO MODE</strong> — Payments are simulated. No real charges were made.
+            </AlertDescription>
+          </Alert>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
             <div className="p-6 rounded-2xl bg-secondary/50 space-y-3">

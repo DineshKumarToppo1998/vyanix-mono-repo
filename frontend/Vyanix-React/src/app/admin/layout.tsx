@@ -3,7 +3,7 @@
 import React from 'react';
 import { useAdminAuth } from '@/hooks/use-admin-auth';
 import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarFooter, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarTrigger, SidebarInset } from '@/components/ui/sidebar';
-import { LayoutDashboard, ShoppingBag, Layers, Settings, LogOut, Bell, User, Search, Menu } from 'lucide-react';
+import { LayoutDashboard, ShoppingBag, Layers, Settings, LogOut, Bell, User, Search, Menu, ShoppingCart } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -31,6 +31,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { name: 'Dashboard', icon: LayoutDashboard, href: '/admin/dashboard' },
     { name: 'Products', icon: ShoppingBag, href: '/admin/products' },
     { name: 'Categories', icon: Layers, href: '/admin/categories' },
+    { name: 'Orders', icon: ShoppingCart, href: '/admin/orders' },
     { name: 'Settings', icon: Settings, href: '/admin/settings' },
   ];
 

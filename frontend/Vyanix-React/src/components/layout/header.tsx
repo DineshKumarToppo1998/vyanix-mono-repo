@@ -2,6 +2,7 @@
 "use client";
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { ShoppingCart, Search, Heart, User, Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,6 +17,14 @@ export function Header() {
   const { itemCount } = useCart();
   const { isAuthenticated, user } = useAuth();
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [q, setQ] = useState('');
+  const router = useRouter();
+
+  const handleSearch = () => {
+    if (q.trim()) {
+      router.push(`/shop?q=${encodeURIComponent(q.trim())}`);
+    }
+  };
 
   return (
     <>
@@ -26,7 +35,7 @@ export function Header() {
               <span className="w-8 h-8 bg-primary text-white rounded-lg flex items-center justify-center font-bold">V</span>
               <span className="hidden sm:inline tracking-tight">Vyanix</span>
             </Link>
-            
+
             <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
               <Link href="/category/electronics" className="hover:text-primary transition-colors">Electronics</Link>
               <Link href="/category/fashion" className="hover:text-primary transition-colors">Fashion</Link>
@@ -37,11 +46,22 @@ export function Header() {
           <div className="flex-1 max-w-md hidden lg:block">
             <div className="relative">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input 
-                type="search" 
-                placeholder="Search premium products..." 
+              <Input
+                type="search"
+                placeholder="Search premium products..."
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                 className="pl-9 bg-secondary/50 border-none focus-visible:ring-primary"
               />
+              <Button
+                variant="ghost"
+                size="sm"
+                className="absolute right-1 top-1/2 -translate-y-1/2 h-7 px-2"
+                onClick={handleSearch}
+              >
+                Search
+              </Button>
             </div>
           </div>
 

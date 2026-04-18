@@ -4,20 +4,24 @@ services:
     build:
       context: ./frontend/Vyanix-React
       args:
-        - NEXT_PUBLIC_API_BASE_URL=http://backend:8080/api  # Internal Docker URL for SSR
+        - NEXT_PUBLIC_API_BASE_URL=/api/v1  # Relative URL - browser routes through Nginx
     container_name: ecommerce_frontend
     expose:
       - "3000"  # Internal only - not published to host
+    environment:
+      - INTERNAL_API_BASE_URL=http://backend:8080/api/v1  # SSR uses internal Docker hostname
+      - HOSTNAME=0.0.0.0
+      - PORT=3000
     depends_on:
       backend:
         condition: service_healthy
     restart: always
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000"]
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:3000"]
       interval: 10s
       timeout: 5s
-      retries: 3
-      start_period: 10s
+      retries: 5
+      start_period: 30s
 
   # Backend - Spring Boot application (internal only, accessed via nginx)
   backend:
@@ -28,12 +32,14 @@ services:
     env_file:
       - .env
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://aws-1-ap-southeast-1.pooler.supabase.com:6543/postgres
-      - SPRING_DATASOURCE_USERNAME=postgres.pktrqykpjbwxbadgceor
-      - SPRING_DATASOURCE_PASSWORD=Supabase#Vyanix@2026
+      - SPRING_DATASOURCE_URL=${SPRING_DATASOURCE_URL}
+      - SPRING_DATASOURCE_USERNAME=${SPRING_DATASOURCE_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${SPRING_DATASOURCE_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
+      - REFRESH_TOKEN_PEPPER=${REFRESH_TOKEN_PEPPER}
       - REDIS_HOST=redis
       - MEILI_HOST=http://meilisearch:7700
-      - APP_CORS_ALLOWED_ORIGINS=http://localhost,http://localhost:3000,http://localhost:9002
+      - APP_CORS_ALLOWED_ORIGINS=${APP_CORS_ALLOWED_ORIGINS}
     depends_on:
       redis:
         condition: service_started
@@ -52,9 +58,11 @@ services:
     image: nginx:latest
     container_name: ecommerce_nginx
     ports:
-      - "80:80"  # ONLY nginx is exposed to the host
+      - "80:80"
+      - "443:443"
     volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/certs:/etc/nginx/certs:ro
     depends_on:
       frontend:
         condition: service_healthy
@@ -62,7 +70,7 @@ services:
         condition: service_healthy
     restart: always
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:80"]
+      test: ["CMD", "curl", "-kf", "https://127.0.0.1/"]
       interval: 10s
       timeout: 5s
       retries: 3

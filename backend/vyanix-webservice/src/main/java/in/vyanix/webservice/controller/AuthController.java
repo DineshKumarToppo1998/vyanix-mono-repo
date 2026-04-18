@@ -7,6 +7,7 @@ import in.vyanix.webservice.service.AuthService;
 import in.vyanix.webservice.service.JwtTokenProvider;
 import in.vyanix.webservice.service.RefreshTokenService;
 import in.vyanix.webservice.service.TokenBlocklistService;
+import in.vyanix.webservice.service.UserService;
 import in.vyanix.webservice.service.exception.UnauthorizedException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -45,6 +46,7 @@ public class AuthController {
     private final JwtTokenProvider jwtTokenProvider;
     private final TokenBlocklistService tokenBlocklistService;
     private final SecurityUtils securityUtils;
+    private final UserService userService;
 
     /**
      * Register a new user
@@ -240,6 +242,21 @@ public class AuthController {
         return ResponseEntity.ok(ApiResponse.success(user));
     }
 
+    /**
+     * Change password for current user
+     */
+    @PatchMapping("/password")
+    public ResponseEntity<ApiResponse<Void>> changePassword(
+            @RequestHeader("Authorization") String authHeader,
+            @Valid @RequestBody ChangePasswordRequest request) {
+        
+        String token = authHeader.substring(7);
+        UUID userId = UUID.fromString(jwtTokenProvider.getUserIdFromToken(token));
+
+        userService.changePassword(userId, request.oldPassword(), request.newPassword());
+        return ResponseEntity.ok(ApiResponse.success(null));
+    }
+
     // ============ Helper Methods ============
 
     /**
@@ -249,8 +266,8 @@ public class AuthController {
     private ResponseCookie createRefreshCookie(String refreshTokenValue) {
         return ResponseCookie.from("refresh_token", refreshTokenValue)
                 .httpOnly(true)
-                .secure(false)  // false for HTTP development; set true when behind HTTPS proxy
-                .sameSite("Lax")  // Lax allows top-level navigation POST requests
+                .secure(true)
+                .sameSite("Strict")
                 .maxAge(jwtTokenProvider.getRefreshExpirationMs() / 1000)
                 .path("/")  // Available to all paths
                 .build();
@@ -262,8 +279,8 @@ public class AuthController {
     private ResponseCookie clearRefreshCookie() {
         return ResponseCookie.from("refresh_token", "")
                 .httpOnly(true)
-                .secure(false)
-                .sameSite("Lax")
+                .secure(true)
+                .sameSite("Strict")
                 .maxAge(0)
                 .path("/")
                 .build();

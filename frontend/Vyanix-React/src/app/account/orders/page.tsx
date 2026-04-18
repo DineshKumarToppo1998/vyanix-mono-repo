@@ -64,21 +64,23 @@ export default function AccountOrdersPage() {
         ) : (
           <div className="space-y-4">
             {orders.map((order) => (
-              <div key={order.id} className="rounded-2xl border bg-white p-6 shadow-sm space-y-3">
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-                  <div>
-                    <h2 className="text-xl font-semibold">{order.orderNumber}</h2>
-                    <p className="text-sm text-muted-foreground">Placed on {new Date(order.createdAt).toLocaleString()}</p>
+              <Link key={order.id} href={`/account/orders/${order.id}`}>
+                <div className="rounded-2xl border bg-white p-6 shadow-sm space-y-3 cursor-pointer hover:border-primary/50 transition-colors">
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                    <div>
+                      <h2 className="text-xl font-semibold">{order.orderNumber}</h2>
+                      <p className="text-sm text-muted-foreground">Placed on {new Date(order.createdAt).toLocaleString()}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-semibold">${order.totalAmount.toFixed(2)}</p>
+                      <p className="text-sm text-muted-foreground">{order.status} / {order.payment?.status ?? 'PENDING'}</p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="font-semibold">${order.totalAmount.toFixed(2)}</p>
-                    <p className="text-sm text-muted-foreground">{order.status} / {order.payment?.status ?? 'PENDING'}</p>
+                  <div className="text-sm text-muted-foreground">
+                    {order.items.map((item) => item.productName).join(', ')}
                   </div>
                 </div>
-                <div className="text-sm text-muted-foreground">
-                  {order.items.map((item) => item.productName).join(', ')}
-                </div>
-              </div>
+              </Link>
             ))}
           </div>
         )}

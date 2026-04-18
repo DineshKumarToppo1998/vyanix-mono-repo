@@ -359,6 +359,19 @@ export const apiClient = {
   deleteAddress: async (addressId: string) => {
     return request<null>(`/addresses/${addressId}`, { method: 'DELETE' });
   },
+  changePassword: async (oldPassword: string, newPassword: string) => {
+    const authHeader = localStorage.getItem('authToken');
+    if (!authHeader) {
+      throw new Error('Not authenticated');
+    }
+
+    const response = await request<void>('/auth/password', {
+      method: 'PATCH',
+      body: JSON.stringify({ oldPassword, newPassword }),
+      headers: { 'Authorization': authHeader },
+    });
+    return response;
+  },
 };
 
 /**

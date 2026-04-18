@@ -24,8 +24,9 @@ public class OrderController {
 
     @PostMapping("/orders")
     public ResponseEntity<ApiResponse<OrderResponse>> createOrder(
-            @RequestHeader("Idempotency-Key") String idempotencyKey,
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
             @Valid @RequestBody OrderCreateRequest request) {
+        String key = idempotencyKey != null && !idempotencyKey.isBlank() ? idempotencyKey : UUID.randomUUID().toString();
         UUID userId = securityUtils.getCurrentUserId();
         OrderAddressCreateRequest addressRequest = request.shippingAddress();
         in.vyanix.webservice.entity.OrderAddress address = new in.vyanix.webservice.entity.OrderAddress();

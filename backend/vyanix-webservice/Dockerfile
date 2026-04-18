@@ -8,7 +8,9 @@ RUN mvn -B clean package -DskipTests
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 RUN apk add --no-cache wget
+RUN addgroup --system --gid 1001 spring && adduser --system --uid 1001 spring -G spring
 COPY --from=builder /build/target/*.jar app.jar
+USER spring:spring
 EXPOSE 8080
 HEALTHCHECK --interval=10s --timeout=5s --start-period=40s --retries=3 \
     CMD wget -q --spider http://localhost:8080/health || exit 1

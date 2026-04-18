@@ -4,10 +4,37 @@ import { ProductDetailView } from '@/components/product/product-detail-view';
 import { fetchPublicCategories, fetchPublicCategoryProducts, fetchPublicProducts } from '@/lib/storefront';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
+import type { Metadata } from 'next';
+
+interface ProductPageProps {
+  params: Promise<{ id: string }>;
+}
+
+export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
+  const { id } = await params;
+  const productsPage = await fetchPublicProducts(`/slug/${id}`);
+  const product = productsPage.data.content[0];
+
+  if (!product) {
+    return {
+      title: 'Product Not Found | Vyanix',
+    };
+  }
+
+  return {
+    title: `${product.name} | Vyanix`,
+    description: product.description ? product.description.slice(0, 155) : '',
+    openGraph: {
+      title: product.name,
+      description: product.description ? product.description.slice(0, 155) : '',
+      images: product.images[0] ? [product.images[0]] : [],
+    },
+  };
+}
 
 export const dynamic = 'force-dynamic';
 
-export default async function ProductPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function ProductPage({ params }: ProductPageProps) {
   const { id } = await params;
 
   const productsPage = await fetchPublicProducts(`/slug/${id}`);

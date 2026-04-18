@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAuth } from '@/hooks/use-auth';
 import { useCart } from '@/hooks/use-cart';
 import { useToast } from '@/hooks/use-toast';
@@ -208,6 +209,11 @@ export default function CheckoutPage() {
                   <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold">2</div>
                   <h2 className="text-2xl font-bold">Payment Review</h2>
                 </div>
+                <Alert variant="info">
+                  <AlertDescription>
+                    <strong>DEMO MODE</strong> — Payments are simulated. No real charges will be made.
+                  </AlertDescription>
+                </Alert>
                 <div className="rounded-2xl border bg-secondary/20 p-6 flex items-start gap-4">
                   <CreditCard className="h-6 w-6 text-primary mt-1" />
                   <div className="space-y-2">

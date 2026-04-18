@@ -1,6 +1,7 @@
 package in.vyanix.webservice.service;
 
 import in.vyanix.webservice.entity.Order;
+import in.vyanix.webservice.entity.OrderStatus;
 import in.vyanix.webservice.entity.Product;
 import in.vyanix.webservice.entity.Sku;
 import in.vyanix.webservice.entity.User;
@@ -14,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @Service
 @Transactional(readOnly = true)
@@ -40,7 +42,9 @@ public class AdminDashboardService {
         // Calculate total revenue from completed orders
         List<Order> allOrders = orderRepository.findAll();
         BigDecimal totalRevenue = allOrders.stream()
-                .filter(order -> "COMPLETED".equals(order.getStatus()))
+                .filter(order -> order.getStatus() == OrderStatus.PAID ||
+                                 order.getStatus() == OrderStatus.SHIPPED ||
+                                 order.getStatus() == OrderStatus.DELIVERED)
                 .map(Order::getTotalAmount)
                 .filter(amount -> amount != null)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -107,5 +111,56 @@ public class AdminDashboardService {
                     "stock", totalStock
             );
         }).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> getAllOrders(int page, int size) {
+        List<Order> orders = orderRepository.findAll(
+                PageRequest.of(page, size, org.springframework.data.domain.Sort.by(
+                        org.springframework.data.domain.Sort.Direction.DESC, "createdAt"))
+        ).getContent();
+
+        return orders.stream().map(order -> {
+            String customerName = order.getUser() != null
+                    ? (order.getUser().getFirstName() + " " + order.getUser().getLastName()).trim()
+                    : "Guest";
+            String customerEmail = order.getUser() != null ? order.getUser().getEmail() : null;
+
+            return Map.<String, Object>of(
+                    "id", order.getId() != null ? order.getId().toString() : null,
+                    "customerName", customerName,
+                    "customerEmail", customerEmail,
+                    "amount", order.getTotalAmount(),
+                    "status", order.getStatus() != null ? order.getStatus().toString() : null,
+                    "createdAt", order.getCreatedAt()
+            );
+        }).toList();
+    }
+
+    @Transactional
+    public Order updateOrderStatus(UUID orderId, OrderStatus newStatus) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new in.vyanix.webservice.service.exception.ResourceNotFoundException(Order.class, orderId));
+
+        OrderStatus currentStatus = order.getStatus();
+        validateStatusTransition(currentStatus, newStatus);
+
+        order.setStatus(newStatus);
+        return orderRepository.save(order);
+    }
+
+    private void validateStatusTransition(OrderStatus current, OrderStatus next) {
+        boolean valid = switch (current) {
+            case PAID -> next == OrderStatus.SHIPPED || next == OrderStatus.DELIVERED || next == OrderStatus.CANCELLED || next == OrderStatus.REFUNDED;
+            case SHIPPED -> next == OrderStatus.DELIVERED || next == OrderStatus.CANCELLED;
+            case DELIVERED -> next == OrderStatus.REFUNDED;
+            case PENDING -> next == OrderStatus.PAID || next == OrderStatus.CANCELLED;
+            case CANCELLED, REFUNDED -> false;
+        };
+
+        if (!valid) {
+            throw new in.vyanix.webservice.service.exception.BadRequestException(
+                    "Invalid status transition from " + current + " to " + next);
+        }
     }
 }

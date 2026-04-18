@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import type { Product } from '@/lib/types';
 
 import { Footer } from '@/components/layout/footer';
@@ -6,9 +7,38 @@ import { ProductCard } from '@/components/product/product-card';
 import { fetchPublicCategories, fetchPublicCategoryProducts } from '@/lib/storefront';
 import { notFound } from 'next/navigation';
 
+interface CategoryPageProps {
+  params: Promise<{ slug: string }>;
+}
+
+export async function generateMetadata({ params }: CategoryPageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const [categories] = await Promise.all([
+    fetchPublicCategories(),
+    fetchPublicCategoryProducts(slug),
+  ]);
+  const category = categories.find((item: any) => item.slug === slug);
+
+  if (!category) {
+    return {
+      title: 'Category Not Found | Vyanix',
+    };
+  }
+
+  return {
+    title: `${category.name} | Vyanix`,
+    description: `${category.name} products at Vyanix`,
+    openGraph: {
+      title: category.name,
+      description: `${category.name} products at Vyanix`,
+      type: 'website',
+    },
+  };
+}
+
 export const dynamic = 'force-dynamic';
 
-export default async function CategoryPage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function CategoryPage({ params }: CategoryPageProps) {
   const { slug } = await params;
 
   const [categories, products] = await Promise.all([

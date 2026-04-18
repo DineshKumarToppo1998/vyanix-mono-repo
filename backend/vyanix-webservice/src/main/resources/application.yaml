@@ -2,12 +2,12 @@ spring:
   application:
     name: vyanix-webservice
   datasource:
-#    url: ${SPRING_DATASOURCE_URL}
-#    username: ${SPRING_DATASOURCE_USERNAME}
-#    password: ${SPRING_DATASOURCE_PASSWORD}
-    url: jdbc:postgresql://localhost:5432/
-    username: postgres
-    password: KeepassXC#123
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+#    url: jdbc:postgresql://localhost:5432/
+#    username: postgres
+#    password: KeepassXC#123
     driver-class-name: org.postgresql.Driver
     hikari:
       data-source-properties:

@@ -177,4 +177,18 @@ export const adminApi = {
     const response = await request<ApiProduct[]>(`/v1/admin/dashboard/products?limit=${limit}`, { method: 'GET' });
     return response;
   },
+
+  // Order Management
+  getAllOrders: async (params?: { page?: number; size?: number }) => {
+    const response = await request<PageResponse<any>>(`/v1/admin/orders${createUrl('', params).search}`, { method: 'GET' });
+    return response;
+  },
+
+  updateOrderStatus: async (id: string, status: string) => {
+    const response = await request<any>(`/v1/admin/orders/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+    });
+    return response;
+  },
 };

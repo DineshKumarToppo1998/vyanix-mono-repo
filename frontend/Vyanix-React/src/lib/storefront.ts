@@ -13,11 +13,11 @@ import type {
 
 export function getApiBaseUrl() {
   if (typeof window === 'undefined') {
-    // Server-side rendering (Next.js server)
-    return process.env.NEXT_PUBLIC_API_BASE_URL || '/api';
+    // Server-side rendering (Next.js server inside Docker) - use internal hostname directly
+    return process.env.INTERNAL_API_BASE_URL || process.env.NEXT_PUBLIC_API_BASE_URL || '/api/v1';
   }
-  // Client-side (browser) - always use relative path through nginx
-  return process.env.NEXT_PUBLIC_API_BASE_URL || '/api';
+  // Client-side (browser) - use relative path so requests go through Nginx
+  return process.env.NEXT_PUBLIC_API_BASE_URL || '/api/v1';
 }
 
 export function getFallbackCategoryImage(slug: string) {
@@ -94,8 +94,16 @@ export function normalizeCart(cart: any): Cart {
     items: cart.items?.map((item: any) => ({
       id: item.id,
       skuId: item.skuId,
-      quantity: item.quantity,
+      productId: item.sku?.productId ?? item.skuId,
+      name: item.productName ?? '',
+      slug: item.productSlug ?? '',
+      images: item.productImage ? [item.productImage] : [],
+      skuCode: item.sku?.skuCode ?? '',
       price: Number(item.price),
+      quantity: item.quantity,
+      subtotal: Number(item.subtotal ?? (Number(item.price) * item.quantity)),
+      stock: item.sku?.stock ?? 0,
+      optionValues: item.sku?.optionValues ?? [],
     })) ?? [],
   };
 }
