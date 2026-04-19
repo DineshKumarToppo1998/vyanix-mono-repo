@@ -52,17 +52,17 @@ export const adminApi = {
     page?: number;
     size?: number;
   }) => {
-    const response = await request<PageResponse<ApiProduct>>(`/v1/admin/products${createUrl('', params).search}`, { method: 'GET' });
+    const response = await request<PageResponse<ApiProduct>>(`/admin/products${createUrl('', params).search}`, { method: 'GET' });
     return response;
   },
 
   getProductById: async (id: string) => {
-    const response = await request<ApiProduct>(`/v1/admin/products/${id}`, { method: 'GET' });
+    const response = await request<ApiProduct>(`/admin/products/${id}`, { method: 'GET' });
     return response;
   },
 
   createProduct: async (payload: AdminProductCreateRequest) => {
-    const response = await request<ApiProduct>('/v1/admin/products', {
+    const response = await request<ApiProduct>('/admin/products', {
       method: 'POST',
       body: JSON.stringify(payload),
     });
@@ -70,7 +70,7 @@ export const adminApi = {
   },
 
   updateProduct: async (id: string, payload: Partial<AdminProductCreateRequest>) => {
-    const response = await request<ApiProduct>(`/v1/admin/products/${id}`, {
+    const response = await request<ApiProduct>(`/admin/products/${id}`, {
       method: 'PUT',
       body: JSON.stringify(payload),
     });
@@ -78,12 +78,12 @@ export const adminApi = {
   },
 
   deleteProduct: async (id: string) => {
-    return request<void>(`/v1/admin/products/${id}`, { method: 'DELETE' });
+    return request<void>(`/admin/products/${id}`, { method: 'DELETE' });
   },
 
   // Product Options
   createOptions: async (productId: string, payloads: AdminProductOptionCreateRequest[]) => {
-    const response = await request<ApiProduct>(`/v1/admin/products/${productId}/options`, {
+    const response = await request<ApiProduct>(`/admin/products/${productId}/options`, {
       method: 'POST',
       body: JSON.stringify(payloads),
     });
@@ -91,7 +91,7 @@ export const adminApi = {
   },
 
   updateOption: async (productId: string, optionId: string, payload: Partial<AdminProductOptionCreateRequest>) => {
-    const response = await request<ApiProduct>(`/v1/admin/products/${productId}/options/${optionId}`, {
+    const response = await request<ApiProduct>(`/admin/products/${productId}/options/${optionId}`, {
       method: 'PUT',
       body: JSON.stringify(payload),
     });
@@ -99,12 +99,12 @@ export const adminApi = {
   },
 
   deleteOption: async (productId: string, optionId: string) => {
-    return request<void>(`/v1/admin/products/${productId}/options/${optionId}`, { method: 'DELETE' });
+    return request<void>(`/admin/products/${productId}/options/${optionId}`, { method: 'DELETE' });
   },
 
   // Product SKUs
   createSkus: async (productId: string, payloads: SkuCreateRequest[]) => {
-    const response = await request<ApiProduct>(`/v1/admin/products/${productId}/skus`, {
+    const response = await request<ApiProduct>(`/admin/products/${productId}/skus`, {
       method: 'POST',
       body: JSON.stringify(payloads),
     });
@@ -112,7 +112,7 @@ export const adminApi = {
   },
 
   updateSku: async (productId: string, skuId: string, payload: Partial<SkuCreateRequest>) => {
-    const response = await request<ApiProduct>(`/v1/admin/products/${productId}/skus/${skuId}`, {
+    const response = await request<ApiProduct>(`/admin/products/${productId}/skus/${skuId}`, {
       method: 'PUT',
       body: JSON.stringify(payload),
     });
@@ -120,12 +120,12 @@ export const adminApi = {
   },
 
   deleteSku: async (productId: string, skuId: string) => {
-    return request<void>(`/v1/admin/products/${productId}/skus/${skuId}`, { method: 'DELETE' });
+    return request<void>(`/admin/products/${productId}/skus/${skuId}`, { method: 'DELETE' });
   },
 
   // Inventory Management
   updateInventory: async (skuId: string, stock: number) => {
-    const response = await request<void>(`/v1/admin/skus/${skuId}/inventory`, {
+    const response = await request<void>(`/admin/skus/${skuId}/inventory`, {
       method: 'PUT',
       body: JSON.stringify({ stock }),
     });
@@ -134,12 +134,12 @@ export const adminApi = {
 
   // Category Management
   getCategories: async () => {
-    const response = await request<Category[]>('/v1/admin/categories', { method: 'GET' });
+    const response = await request<Category[]>('/admin/categories', { method: 'GET' });
     return response;
   },
 
   createCategory: async (payload: CategoryCreateRequest) => {
-    const response = await request<Category>('/v1/admin/categories', {
+    const response = await request<Category>('/admin/categories', {
       method: 'POST',
       body: JSON.stringify(payload),
     });
@@ -147,7 +147,7 @@ export const adminApi = {
   },
 
   updateCategory: async (id: string, payload: CategoryUpdateRequest) => {
-    const response = await request<Category>(`/v1/admin/categories/${id}`, {
+    const response = await request<Category>(`/admin/categories/${id}`, {
       method: 'PUT',
       body: JSON.stringify(payload),
     });
@@ -155,7 +155,7 @@ export const adminApi = {
   },
 
   deleteCategory: async (id: string) => {
-    return request<void>(`/v1/admin/categories/${id}`, { method: 'DELETE' });
+    return request<void>(`/admin/categories/${id}`, { method: 'DELETE' });
   },
 
   // Dashboard Stats
@@ -165,28 +165,28 @@ export const adminApi = {
       totalOrders: number;
       totalRevenue: number;
       totalCustomers: number;
-    }>('/v1/admin/dashboard/stats', { method: 'GET' });
+    }>('/admin/dashboard/stats', { method: 'GET' });
     return response;
   },
 
   getRecentOrders: async (limit: number = 10) => {
-    const response = await request<any[]>(`/v1/admin/dashboard/orders?limit=${limit}`, { method: 'GET' });
+    const response = await request<any[]>(`/admin/dashboard/orders?limit=${limit}`, { method: 'GET' });
     return response;
   },
 
   getRecentProducts: async (limit: number = 10) => {
-    const response = await request<ApiProduct[]>(`/v1/admin/dashboard/products?limit=${limit}`, { method: 'GET' });
+    const response = await request<ApiProduct[]>(`/admin/dashboard/products?limit=${limit}`, { method: 'GET' });
     return response;
   },
 
   // Order Management
   getAllOrders: async (params?: { page?: number; size?: number }) => {
-    const response = await request<PageResponse<any>>(`/v1/admin/orders${createUrl('', params).search}`, { method: 'GET' });
+    const response = await request<PageResponse<any>>(`/admin/orders${createUrl('', params).search}`, { method: 'GET' });
     return response;
   },
 
   updateOrderStatus: async (id: string, status: string) => {
-    const response = await request<any>(`/v1/admin/orders/${id}/status`, {
+    const response = await request<any>(`/admin/orders/${id}/status`, {
       method: 'PATCH',
       body: JSON.stringify({ status }),
     });

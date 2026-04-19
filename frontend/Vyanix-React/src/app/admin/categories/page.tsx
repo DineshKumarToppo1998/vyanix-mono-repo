@@ -131,7 +131,7 @@ export default function CategoriesPage() {
 
   const queryClient = useQueryClient();
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ['categories'],
     queryFn: () => adminApi.getCategories(),
   });
@@ -300,6 +300,24 @@ export default function CategoriesPage() {
                 ))}
               </div>
             </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Categories</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+            <p className="text-muted-foreground mb-4">Failed to load categories. Please try again.</p>
+            <Button onClick={() => refetch()} variant="outline">
+              Retry
+            </Button>
           </CardContent>
         </Card>
       </div>
