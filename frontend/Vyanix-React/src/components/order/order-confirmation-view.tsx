@@ -75,7 +75,7 @@ export function OrderConfirmationView({ orderId }: { orderId?: string }) {
               <ShoppingBag className="h-6 w-6 text-primary" />
               <h3 className="font-bold">Order Total</h3>
               <p className="text-sm text-muted-foreground">
-                {order ? `$${order.totalAmount.toFixed(2)}` : 'See order details'}
+                {order ? `₹${order.totalAmount.toFixed(2)}` : 'See order details'}
               </p>
             </div>
           </div>

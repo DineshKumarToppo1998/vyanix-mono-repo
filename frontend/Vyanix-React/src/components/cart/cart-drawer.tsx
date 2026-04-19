@@ -102,7 +102,7 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
                       <X className="h-4 w-4" />
                     </Button>
                   </div>
-                  <p className="text-sm text-muted-foreground">${item.price.toFixed(2)}</p>
+                  <p className="text-sm text-muted-foreground">₹{item.price.toFixed(2)}</p>
                   <div className="flex items-center gap-2 pt-2">
                     <Button 
                       variant="outline" 
@@ -133,7 +133,7 @@ export function CartDrawer({ isOpen, onClose }: CartDrawerProps) {
             <div className="space-y-1.5 w-full">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Subtotal</span>
-                <span className="font-medium">${subtotal.toFixed(2)}</span>
+                <span className="font-medium">₹{subtotal.toFixed(2)}</span>
               </div>
               <p className="text-xs text-muted-foreground">Shipping and taxes calculated at checkout.</p>
             </div>

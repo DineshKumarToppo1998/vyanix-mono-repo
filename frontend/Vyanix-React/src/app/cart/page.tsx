@@ -83,7 +83,7 @@ export default function CartPage() {
                       <span className="min-w-8 text-center">{item.quantity}</span>
                       <Button variant="outline" size="icon" onClick={() => void handleQuantityChange(item.id, item.quantity + 1)}>+</Button>
                     </div>
-                    <p className="font-semibold">${item.subtotal.toFixed(2)}</p>
+                    <p className="font-semibold">₹{item.subtotal.toFixed(2)}</p>
                   </div>
                 </div>
               ))}
@@ -93,7 +93,7 @@ export default function CartPage() {
               <h2 className="text-xl font-semibold">Summary</h2>
               <div className="flex justify-between text-muted-foreground">
                 <span>Subtotal</span>
-                <span>${subtotal.toFixed(2)}</span>
+                <span>₹{subtotal.toFixed(2)}</span>
               </div>
               <Button className="w-full" asChild>
                 <Link href="/checkout">Proceed to checkout</Link>

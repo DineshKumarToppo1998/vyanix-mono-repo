@@ -137,7 +137,7 @@ export function ProductDetailView({ product, relatedProducts }: ProductDetailVie
               </div>
             </div>
 
-            <div className="text-4xl font-bold text-primary">${price.toFixed(2)}</div>
+            <div className="text-4xl font-bold text-primary">₹{price.toFixed(2)}</div>
 
             <p className="text-lg text-muted-foreground leading-relaxed">{product.description}</p>
 

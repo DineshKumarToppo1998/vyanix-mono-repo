@@ -72,7 +72,7 @@ export default function AccountOrdersPage() {
                       <p className="text-sm text-muted-foreground">Placed on {new Date(order.createdAt).toLocaleString()}</p>
                     </div>
                     <div className="text-right">
-                      <p className="font-semibold">${order.totalAmount.toFixed(2)}</p>
+                      <p className="font-semibold">₹{order.totalAmount.toFixed(2)}</p>
                       <p className="text-sm text-muted-foreground">{order.status} / {order.payment?.status ?? 'PENDING'}</p>
                     </div>
                   </div>

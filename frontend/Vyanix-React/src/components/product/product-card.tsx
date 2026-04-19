@@ -96,7 +96,7 @@ export function ProductCard({ product }: ProductCardProps) {
           <span className="text-xs text-muted-foreground">({product.reviewsCount})</span>
         </div>
         <div className="mt-auto flex items-center justify-between">
-          <p className="text-xl font-bold text-primary">${product.price.toFixed(2)}</p>
+          <p className="text-xl font-bold text-primary">₹{product.price.toFixed(2)}</p>
         </div>
       </div>
     </Card>

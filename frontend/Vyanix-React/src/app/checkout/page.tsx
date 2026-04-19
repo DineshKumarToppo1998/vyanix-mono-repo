@@ -233,7 +233,7 @@ export default function CheckoutPage() {
                 <div className="flex gap-4 pt-4">
                   <Button variant="outline" className="flex-1" onClick={() => setStep(1)}>Back</Button>
                   <Button className="flex-1 bg-accent hover:bg-accent/90 text-accent-foreground" onClick={handlePlaceOrder} disabled={placingOrder}>
-                    {placingOrder ? 'Processing...' : `Place Order - $${total.toFixed(2)}`}
+                    {placingOrder ? 'Processing...' : `Place Order - ₹${total.toFixed(2)}`}
                   </Button>
                 </div>
               </div>
@@ -253,7 +253,7 @@ export default function CheckoutPage() {
                       <h4 className="font-medium line-clamp-1">{item.name}</h4>
                       <p className="text-muted-foreground">Qty: {item.quantity}</p>
                       <p className="text-muted-foreground">SKU: {item.skuCode}</p>
-                      <p className="font-semibold">${(item.price * item.quantity).toFixed(2)}</p>
+                      <p className="font-semibold">₹{(item.price * item.quantity).toFixed(2)}</p>
                     </div>
                   </div>
                 ))}
@@ -262,20 +262,20 @@ export default function CheckoutPage() {
               <div className="space-y-2">
                 <div className="flex justify-between text-muted-foreground">
                   <span>Subtotal</span>
-                  <span>${subtotal.toFixed(2)}</span>
+                  <span>₹{subtotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-muted-foreground">
                   <span>Shipping</span>
-                  <span>${shippingCost.toFixed(2)}</span>
+                  <span>₹{shippingCost.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-muted-foreground">
                   <span>Tax</span>
-                  <span>${tax.toFixed(2)}</span>
+                  <span>₹{tax.toFixed(2)}</span>
                 </div>
                 <Separator className="my-4" />
                 <div className="flex justify-between text-xl font-bold text-primary">
                   <span>Total</span>
-                  <span>${total.toFixed(2)}</span>
+                  <span>₹{total.toFixed(2)}</span>
                 </div>
               </div>
             </div>

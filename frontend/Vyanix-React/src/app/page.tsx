@@ -53,7 +53,7 @@ export default async function Home() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
               {[
                 { icon: ShieldCheck, title: 'Secure Payment', desc: 'Safe and encrypted transactions' },
-                { icon: Truck, title: 'Free Shipping', desc: 'On all orders over $100' },
+                { icon: Truck, title: 'Free Shipping', desc: 'On all orders over ₹100' },
                 { icon: RefreshCw, title: '30-Day Returns', desc: 'Hassle-free return policy' },
                 { icon: HeadphonesIcon, title: '24/7 Support', desc: 'Dedicated customer support' },
               ].map((feature, i) => (
