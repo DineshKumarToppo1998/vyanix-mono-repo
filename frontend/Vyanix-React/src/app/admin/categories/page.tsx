@@ -14,6 +14,8 @@ import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { Edit, Trash2, Plus } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
+import { useRouter } from 'next/navigation';
+import { clearQueryCache } from '@/lib/query-client';
 
 interface CategoryTree {
   id: string;
@@ -131,6 +133,7 @@ export default function CategoriesPage() {
   });
 
   const queryClient = useQueryClient();
+  const router = useRouter();
 
   const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['categories'],
@@ -138,6 +141,17 @@ export default function CategoriesPage() {
   });
 
   const isAuthError = error && typeof error === 'object' && 'status' in error && ((error as { status: number }).status === 401 || (error as { status: number }).status === 403);
+
+  // Auto-redirect to account page on auth error to prevent dead-end state
+  useEffect(() => {
+    if (isAuthError) {
+      clearQueryCache();
+      const timer = setTimeout(() => {
+        router.replace('/account');
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [isAuthError, router]);
 
   const createMutation = useMutation({
     mutationFn: (payload: any) => adminApi.createCategory(payload),

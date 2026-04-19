@@ -37,8 +37,18 @@ let accessTokenInMemory: string | null = null;
 
 let refreshCallback: (() => Promise<string>) | null = null;
 
+let isRefreshing = false;
+
 export function setRefreshCallback(callback: (() => Promise<string>) | null) {
   refreshCallback = callback;
+}
+
+export function isTokenRefreshing(): boolean {
+  return isRefreshing;
+}
+
+export function setRefreshingState(state: boolean) {
+  isRefreshing = state;
 }
 
 /**
@@ -147,9 +157,28 @@ export async function request<T>(
   if (!response.ok) {
     if (response.status === 401 && retryOn401 && refreshCallback) {
       try {
+        setRefreshingState(true);
         await refreshCallback();
-        return request<T>(path, init, includeAuth, includeCsrf, false);
+        // Retry the original request with the freshly refreshed token
+        const refreshedHeaders = createHeaders(init?.headers, includeAuth, includeCsrf);
+        const freshResponse = await fetch(`${getApiBaseUrl()}${path}`, {
+          ...init,
+          headers: refreshedHeaders,
+        });
+        const freshIsJson = freshResponse.headers.get('content-type')?.includes('application/json');
+        const freshPayload = freshIsJson ? ((await freshResponse.json()) as ApiResponse<T>) : undefined;
+        setRefreshingState(false);
+
+        if (!freshResponse.ok) {
+          const error = new Error(freshPayload?.message ?? 'Request failed') as ApiError;
+          error.status = freshResponse.status;
+          error.payload = freshPayload;
+          error.code = (freshPayload as any)?.code;
+          throw error;
+        }
+        return freshPayload ?? ({ success: true, data: null as T } satisfies ApiResponse<T>);
       } catch {
+        setRefreshingState(false);
         // Refresh failed, propagate original error
       }
     }
