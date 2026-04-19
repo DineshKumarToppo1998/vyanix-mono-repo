@@ -30,7 +30,7 @@ public class SecurityConfig {
                 .cors(Customizer.withDefaults())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authz -> authz
-                        .requestMatchers(HttpMethod.POST, "/api/auth/register", "/api/auth/login", "/api/v1/auth/register", "/api/v1/auth/login").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/auth/register", "/api/auth/login", "/api/v1/auth/register", "/api/v1/auth/login", "/api/v1/auth/refresh", "/api/auth/refresh", "/api/v1/auth/logout", "/api/auth/logout").permitAll()
                         .requestMatchers(HttpMethod.GET, "/health", "/api/health").permitAll()
                         .requestMatchers(HttpMethod.HEAD, "/health", "/api/health", "/actuator/health", "/actuator/health/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/products/**", "/api/categories/**", "/api/v1/products/**", "/api/v1/categories/**").permitAll()
