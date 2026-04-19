@@ -35,6 +35,12 @@ const CSRF_HEADER_NAME = 'X-XSRF-TOKEN';
  */
 let accessTokenInMemory: string | null = null;
 
+let refreshCallback: (() => Promise<string>) | null = null;
+
+export function setRefreshCallback(callback: (() => Promise<string>) | null) {
+  refreshCallback = callback;
+}
+
 /**
  * Get the current access token from memory
  * Called by request interceptor on every request to get fresh token
@@ -121,13 +127,14 @@ export interface ApiError extends Error {
 }
 
 /**
- * Make API request with error handling
+ * Make API request with error handling and automatic 401 retry
  */
 export async function request<T>(
   path: string,
   init?: RequestInit,
   includeAuth = true,
-  includeCsrf = true
+  includeCsrf = true,
+  retryOn401 = true
 ): Promise<ApiResponse<T>> {
   const response = await fetch(`${getApiBaseUrl()}${path}`, {
     ...init,
@@ -138,10 +145,18 @@ export async function request<T>(
   const payload = isJson ? ((await response.json()) as ApiResponse<T>) : undefined;
 
   if (!response.ok) {
+    if (response.status === 401 && retryOn401 && refreshCallback) {
+      try {
+        await refreshCallback();
+        return request<T>(path, init, includeAuth, includeCsrf, false);
+      } catch {
+        // Refresh failed, propagate original error
+      }
+    }
     const error = new Error(payload?.message ?? 'Request failed') as ApiError;
     error.status = response.status;
     error.payload = payload;
-    error.code = (payload as any)?.code;  // Extract error code
+    error.code = (payload as any)?.code;
     throw error;
   }
 
@@ -360,17 +375,10 @@ export const apiClient = {
     return request<null>(`/addresses/${addressId}`, { method: 'DELETE' });
   },
   changePassword: async (oldPassword: string, newPassword: string) => {
-    const authHeader = localStorage.getItem('authToken');
-    if (!authHeader) {
-      throw new Error('Not authenticated');
-    }
-
-    const response = await request<void>('/auth/password', {
+    return request<void>('/auth/password', {
       method: 'PATCH',
       body: JSON.stringify({ oldPassword, newPassword }),
-      headers: { 'Authorization': authHeader },
     });
-    return response;
   },
 };
 

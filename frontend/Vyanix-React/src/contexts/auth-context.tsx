@@ -2,7 +2,7 @@
 
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
-import { apiClient, setAccessTokenInMemory } from '@/lib/api/api-client';
+import { apiClient, setAccessTokenInMemory, setRefreshCallback } from '@/lib/api/api-client';
 import { authBroadcast } from '@/lib/auth-broadcast';
 import type { LoginRequest, RegisterRequest, User, AuthSession } from '@/lib/types';
 
@@ -73,6 +73,16 @@ function releaseRefreshLock() {
     localStorage.removeItem(REFRESH_LOCK_KEY);
   } catch {
     // Ignore
+  }
+}
+
+function getTokenExpiry(token: string): number | null {
+  try {
+    const payload = token.split('.')[1];
+    const decoded = JSON.parse(atob(payload));
+    return decoded.exp ? decoded.exp * 1000 : null;
+  } catch {
+    return null;
   }
 }
 
@@ -193,39 +203,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [persistToken, logout]);
 
   /**
-   * Handle API requests with automatic token refresh on 401
-   */
-  const handleRequestWithRetry = useCallback(async <T,>(
-    requestFn: () => Promise<T>,
-    isRetry = false
-  ): Promise<T> => {
-    try {
-      return await requestFn();
-    } catch (error: any) {
-      // Check if it's a 401 error
-      if (error?.status === 401 || error?.message?.includes('401')) {
-        if (isRetry) {
-          // Already retried, force logout
-          await logout();
-          throw error;
-        }
-
-        try {
-          // Refresh token
-          await refreshAccessToken();
-          // Retry original request
-          return await requestFn();
-        } catch (refreshError) {
-          // Refresh failed, logout
-          await logout();
-          throw refreshError;
-        }
-      }
-      throw error;
-    }
-  }, [refreshAccessToken, logout]);
-
-  /**
    * Listen for logout events from other tabs
    */
   useEffect(() => {
@@ -249,6 +226,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     async function bootstrapAuth() {
       try {
+        // Register refresh callback for 401 interceptor
+        setRefreshCallback(() => refreshAccessToken());
+
         // No access token in memory - refresh from HttpOnly cookie
         // This is expected behavior after page refresh
         try {
@@ -273,7 +253,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     void bootstrapAuth();
-  }, [refreshUser, persistToken]);
+  }, [refreshUser, persistToken, refreshAccessToken]);
 
   /**
    * Login with email and password
@@ -306,6 +286,61 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
     }
   }, [login]);
+
+  /**
+   * Proactive timer - schedule refresh before token expires
+   */
+  useEffect(() => {
+    if (!accessToken) return;
+
+    const expiry = getTokenExpiry(accessToken);
+    if (!expiry) return;
+
+    const now = Date.now();
+    const timeUntilExpiry = expiry - now;
+    if (timeUntilExpiry <= 0) {
+      // Token already expired, trigger refresh
+      void refreshAccessToken();
+      return;
+    }
+
+    // Fire refresh at 80% of token lifetime, or 2 minutes before expiry, whichever is earlier
+    const refreshDelay = Math.min(timeUntilExpiry * 0.8, timeUntilExpiry - 2 * 60 * 1000);
+    if (refreshDelay <= 0) {
+      // Less than 2 minutes until expiry, refresh now
+      void refreshAccessToken();
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      if (!refreshPromise) {
+        void refreshAccessToken();
+      }
+    }, refreshDelay);
+
+    return () => clearTimeout(timer);
+  }, [accessToken, refreshAccessToken]);
+
+  /**
+   * Visibility-triggered refresh - on tab focus, check token freshness
+   */
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && accessToken) {
+        const expiry = getTokenExpiry(accessToken);
+        if (expiry && Date.now() >= expiry) {
+          // Token is stale, refresh silently
+          void refreshAccessToken().catch(() => {
+            // Refresh failed, logout
+            void logout();
+          });
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [accessToken, refreshAccessToken, logout]);
 
   /**
    * Get active sessions for current user
