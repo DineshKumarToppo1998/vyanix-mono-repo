@@ -2,7 +2,7 @@
 
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
-import { apiClient, setAccessTokenInMemory, setRefreshCallback } from '@/lib/api/api-client';
+import { apiClient, setAccessTokenInMemory, setRefreshCallback, setRefreshingState, isTokenRefreshing } from '@/lib/api/api-client';
 import { clearQueryCache } from '@/lib/query-client';
 import { authBroadcast } from '@/lib/auth-broadcast';
 import type { LoginRequest, RegisterRequest, User, AuthSession } from '@/lib/types';
@@ -118,42 +118,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
    * Logout and broadcast to all tabs
    */
   const logout = useCallback(async () => {
-    try {
-      await apiClient.logout();
-    } catch (error) {
-      console.error('Logout error:', error);
-    } finally {
-      persistToken(null);
-      setUser(null);
-      clearQueryCache();
+    // Clear auth state synchronously FIRST to prevent any in-flight queries from using stale state
+    persistToken(null);
+    setUser(null);
+    clearQueryCache();
 
-      // Broadcast logout to all tabs
-      authBroadcast.broadcastLogout();
+    // Broadcast logout to all tabs
+    authBroadcast.broadcastLogout();
 
-      refreshPromise = null;
-      refreshQueue = [];
-    }
+    // Fire and forget the API call - don't block UX
+    try { await apiClient.logout(); } catch { /* ignore */ }
+
+    refreshPromise = null;
+    refreshQueue = [];
   }, [persistToken]);
 
   /**
    * Logout from all devices
    */
   const logoutFromAllDevices = useCallback(async () => {
-    try {
-      await apiClient.logoutFromAllDevices();
-    } catch (error) {
-      console.error('Logout all devices error:', error);
-    } finally {
-      persistToken(null);
-      setUser(null);
-      clearQueryCache();
+    // Clear auth state synchronously FIRST
+    persistToken(null);
+    setUser(null);
+    clearQueryCache();
 
-      // Broadcast logout to all tabs
-      authBroadcast.broadcastLogout();
+    // Broadcast logout to all tabs
+    authBroadcast.broadcastLogout();
 
-      refreshPromise = null;
-      refreshQueue = [];
-    }
+    try { await apiClient.logoutFromAllDevices(); } catch { /* ignore */ }
+
+    refreshPromise = null;
+    refreshQueue = [];
   }, [persistToken]);
 
   /**
@@ -228,37 +223,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
    * Bootstrap authentication on mount
    * Access token is memory-only, so we refresh from cookie on page load
    */
+  const [hasBooted, setHasBooted] = useState(false);
+
   useEffect(() => {
+    if (hasBooted) return;
+    setHasBooted(true);
+
     async function bootstrapAuth() {
       try {
         // Register refresh callback for 401 interceptor
         setRefreshCallback(() => refreshAccessToken());
 
-        // No access token in memory - refresh from HttpOnly cookie
-        // This is expected behavior after page refresh
-        try {
-          const response = await apiClient.refreshAccessToken();
-          // Use persistToken to update both state and api-client module
-          persistToken(response.data.accessToken);
-          await refreshUser();
-        } catch (refreshError: any) {
-          // No valid refresh cookie - user is logged out
-          // Check for specific error codes to show appropriate message
-          if (refreshError?.code === 'SESSION_LIMIT_EXCEEDED') {
-            console.log('Session limit exceeded - user was evicted');
-          } else if (refreshError?.code === 'SECURITY_THEFT_DETECTED') {
-            console.log('Security: token theft detected');
-          }
-          persistToken(null);
-          setUser(null);
-        }
+        const response = await apiClient.refreshAccessToken();
+        persistToken(response.data.accessToken);
+        await refreshUser();
+      } catch {
+        persistToken(null);
+        setUser(null);
       } finally {
         setInitializing(false);
       }
     }
 
     void bootstrapAuth();
-  }, [refreshUser, persistToken, refreshAccessToken]);
+  }, [refreshUser, persistToken]);
 
   /**
    * Login with email and password
@@ -318,7 +306,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     const timer = setTimeout(() => {
-      if (!refreshPromise) {
+      if (!refreshPromise && !isTokenRefreshing()) {
         void refreshAccessToken();
       }
     }, refreshDelay);
@@ -332,14 +320,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (!document.hidden && accessToken) {
-        const expiry = getTokenExpiry(accessToken);
-        if (expiry && Date.now() >= expiry) {
-          // Token is stale, refresh silently
-          void refreshAccessToken().catch(() => {
-            // Refresh failed, logout
-            void logout();
-          });
-        }
+      const expiry = getTokenExpiry(accessToken);
+      if (expiry && Date.now() >= expiry && !isTokenRefreshing()) {
+        // Token is stale, refresh silently
+        void refreshAccessToken().catch(() => {
+          // Refresh failed, logout
+          void logout();
+        });
+      }
       }
     };
 

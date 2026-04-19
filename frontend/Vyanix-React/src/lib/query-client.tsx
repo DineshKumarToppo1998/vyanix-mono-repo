@@ -13,11 +13,12 @@ const queryClient = new QueryClient({
         if (failureCount >= 2) return false;
         if (error && typeof error === 'object' && 'status' in error) {
           const status = (error as { status: number }).status;
+          if (status === 401) return false; // 401 is handled by the interceptor + refresh flow, don't let React Query retry
           if (status >= 400) return false;
         }
         return true;
       },
-      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+      retryDelay: 0,
     },
   },
 });
