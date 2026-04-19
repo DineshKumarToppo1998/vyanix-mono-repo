@@ -156,15 +156,18 @@ export default function NewProductPage() {
   const optionValuesLists = options.map((opt) => opt.values.filter((v) => v.trim() !== ''));
 
   const generatedSkus = useMemo(() => {
-    if (optionValuesLists.length === 0 || optionValuesLists.some((vals) => vals.length === 0)) {
+    const names = options.map((opt) => opt.name);
+    const valueLists = options.map((opt) => opt.values.filter((v) => v.trim() !== ''));
+
+    if (valueLists.length === 0 || valueLists.some((vals) => vals.length === 0)) {
       return [];
     }
 
-    const combinations = cartesianProduct(optionValuesLists);
+    const combinations = cartesianProduct(valueLists);
 
     return combinations.map((combination, index) => {
       const optionValues: Record<string, string> = {};
-      optionNames.forEach((name, i) => {
+      names.forEach((name, i) => {
         optionValues[name] = combination[i];
       });
 
@@ -176,7 +179,7 @@ export default function NewProductPage() {
         stock: 0,
       };
     });
-  }, [optionNames, optionValuesLists]);
+  }, [options]);
 
   useEffect(() => {
     if (currentStep === 2) {
