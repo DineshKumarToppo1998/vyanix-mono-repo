@@ -5,7 +5,7 @@ RUN npm ci
 COPY . .
 ARG NEXT_PUBLIC_API_BASE_URL=/api/v1
 ENV NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL
-RUN npm run build
+RUN mkdir -p /app/public && npm run build
 
 FROM node:20-alpine AS runner
 WORKDIR /app
