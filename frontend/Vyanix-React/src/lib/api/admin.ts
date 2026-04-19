@@ -13,6 +13,7 @@ export interface AdminProductCreateRequest {
   slug: string;
   description: string;
   categoryId: string;
+  imageUrls?: string[];
 }
 
 export interface AdminProductOptionCreateRequest {

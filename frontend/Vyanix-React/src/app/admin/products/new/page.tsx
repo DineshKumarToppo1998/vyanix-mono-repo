@@ -71,12 +71,21 @@ export default function NewProductPage() {
   const [slug, setSlug] = useState('');
   const [options, setOptions] = useState<Option[]>([]);
   const [skuRows, setSkuRows] = useState<SkuRow[]>([]);
+  const [imageUrls, setImageUrls] = useState<string[]>(['']);
 
   useEffect(() => {
     if (formData.name) {
       setSlug(generateSlug(formData.name));
     }
   }, [formData.name]);
+
+  const addImageUrl = () => setImageUrls((prev) => [...prev, '']);
+  const updateImageUrl = (index: number, value: string) => {
+    setImageUrls((prev) => prev.map((url, i) => (i === index ? value : url)));
+  };
+  const removeImageUrl = (index: number) => {
+    setImageUrls((prev) => prev.filter((_, i) => i !== index));
+  };
 
   const handleBasicInfoChange = (field: keyof typeof formData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -214,6 +223,7 @@ export default function NewProductPage() {
         slug,
         description: formData.description,
         categoryId: formData.categoryId,
+        imageUrls: imageUrls.filter((url) => url.trim() !== ''),
       });
 
       const productId = productResponse.data.id;
@@ -250,6 +260,7 @@ export default function NewProductPage() {
       setSlug('');
       setOptions([]);
       setSkuRows([]);
+      setImageUrls(['']);
     } catch (error) {
       console.error('Error creating product:', error);
       toast({
@@ -363,17 +374,40 @@ export default function NewProductPage() {
             <SelectTrigger id="category" className="h-10">
               <SelectValue placeholder="Select a category" />
             </SelectTrigger>
-            <SelectContent>
+<SelectContent>
                {categories?.data?.map((category) => (
                  <SelectItem key={category.id} value={category.id}>
                    {category.name}
                  </SelectItem>
                ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-    );
+             </SelectContent>
+           </Select>
+         </div>
+
+         <div className="space-y-2">
+           <label className="text-sm font-medium">Product Images</label>
+           <p className="text-xs text-muted-foreground">Paste publicly accessible image URLs. The first URL will be the primary image.</p>
+           {imageUrls.map((url, index) => (
+             <div key={index} className="flex gap-2 items-center">
+               <Input
+                 value={url}
+                 onChange={(e) => updateImageUrl(index, e.target.value)}
+                 placeholder={`Image URL ${index + 1} (https://...)`}
+                 className="h-10 flex-1"
+               />
+               {imageUrls.length > 1 && (
+                 <Button type="button" variant="ghost" size="icon" onClick={() => removeImageUrl(index)}>
+                   <Trash2 className="w-4 h-4" />
+                 </Button>
+               )}
+             </div>
+           ))}
+           <Button type="button" variant="outline" size="sm" onClick={addImageUrl} className="mt-1">
+             <Plus className="w-4 h-4 mr-1" /> Add Another Image
+           </Button>
+         </div>
+       </div>
+     );
   };
 
   const renderStep2 = () => {
@@ -552,7 +586,7 @@ export default function NewProductPage() {
               <p className="font-mono text-sm">{slug}</p>
             </div>
 
-            <div className="space-y-2">
+<div className="space-y-2">
               <span className="text-sm font-medium text-muted-foreground">Category</span>
               <p className="font-medium">
                  {categories?.data?.find((c) => c.id === formData.categoryId)?.name || '-'}
@@ -564,6 +598,17 @@ export default function NewProductPage() {
               <p className="text-sm">{formData.description}</p>
             </div>
           </div>
+
+          {imageUrls.filter((u) => u.trim() !== '').length > 0 && (
+            <div className="space-y-2">
+              <span className="text-sm font-medium text-muted-foreground">Images</span>
+              <div className="flex gap-2 flex-wrap">
+                {imageUrls.filter((u) => u.trim() !== '').map((url, i) => (
+                  <img key={i} src={url} alt={`Image ${i + 1}`} className="h-16 w-16 rounded object-cover border" />
+                ))}
+              </div>
+            </div>
+          )}
 
           {options.length > 0 && (
             <div className="pt-4 border-t space-y-4">
