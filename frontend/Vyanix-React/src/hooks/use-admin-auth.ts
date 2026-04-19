@@ -5,15 +5,15 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/use-auth';
 
 export function useAdminAuth() {
-  const { user, isAuthenticated, loading: authLoading } = useAuth();
+  const { user, isAuthenticated, initializing } = useAuth();
   const router = useRouter();
   const isAdmin = user?.role === 'ADMIN';
 
   useEffect(() => {
-    if (!authLoading && isAuthenticated && !isAdmin) {
+    if (!initializing && isAuthenticated && !isAdmin) {
       router.push('/login');
     }
-  }, [isAuthenticated, isAdmin, router, authLoading]);
+  }, [isAuthenticated, isAdmin, router, initializing]);
 
-  return { isAdmin, isLoading: authLoading };
+  return { isAdmin, isLoading: initializing };
 }

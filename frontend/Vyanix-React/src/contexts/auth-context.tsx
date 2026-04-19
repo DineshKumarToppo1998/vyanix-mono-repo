@@ -3,6 +3,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
 import { apiClient, setAccessTokenInMemory, setRefreshCallback } from '@/lib/api/api-client';
+import { clearQueryCache } from '@/lib/query-client';
 import { authBroadcast } from '@/lib/auth-broadcast';
 import type { LoginRequest, RegisterRequest, User, AuthSession } from '@/lib/types';
 
@@ -124,10 +125,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       persistToken(null);
       setUser(null);
-      
+      clearQueryCache();
+
       // Broadcast logout to all tabs
       authBroadcast.broadcastLogout();
-      
+
       refreshPromise = null;
       refreshQueue = [];
     }
@@ -144,10 +146,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       persistToken(null);
       setUser(null);
-      
+      clearQueryCache();
+
       // Broadcast logout to all tabs
       authBroadcast.broadcastLogout();
-      
+
       refreshPromise = null;
       refreshQueue = [];
     }

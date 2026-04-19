@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { useAdminAuth } from '@/hooks/use-admin-auth';
+import { useAuth } from '@/contexts/auth-context';
 import { SidebarProvider, Sidebar, SidebarContent, SidebarHeader, SidebarFooter, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarTrigger, SidebarInset } from '@/components/ui/sidebar';
 import { LayoutDashboard, ShoppingBag, Layers, Settings, LogOut, Bell, User, Search, Menu, ShoppingCart } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -12,6 +13,7 @@ import { useRouter } from 'next/navigation';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const { isAdmin, isLoading } = useAdminAuth();
+  const { logout, loading } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
 
@@ -35,9 +37,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     { name: 'Settings', icon: Settings, href: '/admin/settings' },
   ];
 
-  const handleLogout = () => {
-    // Token is stored in memory only - no need to clear localStorage
-    // Auth context will handle clearing when logout API is called
+  const handleLogout = async () => {
+    await logout();
     router.push('/');
   };
 
@@ -72,9 +73,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <SidebarFooter className="p-4 border-t">
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton 
+                <SidebarMenuButton
                   className="text-destructive hover:text-destructive"
                   onClick={handleLogout}
+                  disabled={loading}
                 >
                   <LogOut />
                   <span className="group-data-[collapsible=icon]:hidden">Logout</span>

@@ -69,15 +69,21 @@ export default function NewProductPage() {
   });
 
   const [slug, setSlug] = useState('');
+  const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
   const [options, setOptions] = useState<Option[]>([]);
   const [skuRows, setSkuRows] = useState<SkuRow[]>([]);
   const [imageUrls, setImageUrls] = useState<string[]>(['']);
 
   useEffect(() => {
-    if (formData.name) {
+    if (formData.name && !slugManuallyEdited) {
       setSlug(generateSlug(formData.name));
     }
-  }, [formData.name]);
+  }, [formData.name, slugManuallyEdited]);
+
+  const handleSlugChange = (value: string) => {
+    setSlug(value);
+    setSlugManuallyEdited(true);
+  };
 
   const addImageUrl = () => setImageUrls((prev) => [...prev, '']);
   const updateImageUrl = (index: number, value: string) => {
@@ -261,16 +267,89 @@ export default function NewProductPage() {
       setCurrentStep(0);
       setFormData({ name: '', description: '', categoryId: '' });
       setSlug('');
+      setSlugManuallyEdited(false);
       setOptions([]);
       setSkuRows([]);
       setImageUrls(['']);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creating product:', error);
-      toast({
-        title: 'Error creating product',
-        description: 'Please check your inputs and try again.',
-        variant: 'destructive',
-      });
+      const errorMessage = error?.message || 'Please check your inputs and try again.';
+      const isSlugConflict = error?.code === 'BAD_REQUEST' && errorMessage.toLowerCase().includes('slug');
+      if (isSlugConflict) {
+        const baseSlug = slug;
+        let attempt = 2;
+        let success = false;
+        while (attempt <= 10 && !success) {
+          const newSlug = `${baseSlug}-${attempt}`;
+          try {
+            const productResponse = await adminApi.createProduct({
+              name: formData.name,
+              slug: newSlug,
+              description: formData.description,
+              categoryId: formData.categoryId,
+              imageUrls: imageUrls.filter((url) => url.trim() !== ''),
+            });
+            const productId = productResponse.data.id;
+            if (options.length > 0) {
+              const optionPayloads = options.map((opt) => ({
+                name: opt.name,
+                values: opt.values.filter((v) => v.trim() !== ''),
+              }));
+              await adminApi.createOptions(productId, optionPayloads);
+            }
+            if (skuRows.length > 0) {
+              const skuPayloads = skuRows.map((sku) => ({
+                skuCode: sku.skuCode,
+                price: sku.price,
+                stock: sku.stock,
+                optionValues: Object.entries(sku.optionValues).map(([optionName, value]) => ({
+                  optionId: options.find((opt) => opt.name === optionName)?.id || '',
+                  value,
+                })),
+              }));
+              await adminApi.createSkus(productId, skuPayloads);
+            }
+            toast({
+              title: 'Product created successfully',
+              description: `Product created with slug: ${newSlug}`,
+              variant: 'default',
+            });
+            setSlug(newSlug);
+            setCurrentStep(0);
+            setFormData({ name: '', description: '', categoryId: '' });
+            setSlugManuallyEdited(false);
+            setOptions([]);
+            setSkuRows([]);
+            setImageUrls(['']);
+            success = true;
+          } catch (retryError: any) {
+            const retryMessage = retryError?.message || '';
+            if (retryError?.code === 'BAD_REQUEST' && retryMessage.toLowerCase().includes('slug')) {
+              attempt++;
+            } else {
+              toast({
+                title: 'Error creating product',
+                description: retryError?.message || 'Please check your inputs and try again.',
+                variant: 'destructive',
+              });
+              success = true;
+            }
+          }
+        }
+        if (!success && attempt > 10) {
+          toast({
+            title: 'Error creating product',
+            description: errorMessage,
+            variant: 'destructive',
+          });
+        }
+      } else {
+        toast({
+          title: 'Error creating product',
+          description: errorMessage,
+          variant: 'destructive',
+        });
+      }
     } finally {
       setLoading(false);
     }
@@ -348,8 +427,9 @@ export default function NewProductPage() {
           <Input
             id="slug"
             value={slug}
-            readOnly
-            className="h-10 bg-muted/50"
+            onChange={(e) => handleSlugChange(e.target.value)}
+            placeholder="product-slug"
+            className="h-10"
           />
         </div>
 
