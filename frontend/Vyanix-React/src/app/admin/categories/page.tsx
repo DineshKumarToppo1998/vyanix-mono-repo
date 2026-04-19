@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from '@/hooks/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
+import Link from 'next/link';
 import { Edit, Trash2, Plus } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 
@@ -131,10 +132,12 @@ export default function CategoriesPage() {
 
   const queryClient = useQueryClient();
 
-  const { data, isLoading, isError, refetch } = useQuery({
+  const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['categories'],
     queryFn: () => adminApi.getCategories(),
   });
+
+  const isAuthError = error && typeof error === 'object' && 'status' in error && ((error as { status: number }).status === 401 || (error as { status: number }).status === 403);
 
   const createMutation = useMutation({
     mutationFn: (payload: any) => adminApi.createCategory(payload),
@@ -314,10 +317,21 @@ export default function CategoriesPage() {
             <CardTitle>Categories</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-            <p className="text-muted-foreground mb-4">Failed to load categories. Please try again.</p>
-            <Button onClick={() => refetch()} variant="outline">
-              Retry
-            </Button>
+            {isAuthError ? (
+              <>
+                <p className="text-muted-foreground mb-4">Session expired. Please sign in again.</p>
+                <Button asChild variant="outline">
+                  <Link href="/account">Sign In</Link>
+                </Button>
+              </>
+            ) : (
+              <>
+                <p className="text-muted-foreground mb-4">Failed to load categories. Please try again.</p>
+                <Button onClick={() => refetch()} variant="outline">
+                  Retry
+                </Button>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>
