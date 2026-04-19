@@ -13,6 +13,7 @@ interface AuthContextValue {
   user: User | null;
   accessToken: string | null;
   isAuthenticated: boolean;
+  initializing: boolean;
   loading: boolean;
   login: (payload: LoginRequest) => Promise<void>;
   register: (payload: RegisterRequest) => Promise<void>;
@@ -89,7 +90,8 @@ function getTokenExpiry(token: string): number | null {
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [accessToken, setAccessToken] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [initializing, setInitializing] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   /**
@@ -248,7 +250,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(null);
         }
       } finally {
-        setLoading(false);
+        setInitializing(false);
       }
     }
 
@@ -361,6 +363,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     user,
     accessToken,
     isAuthenticated: Boolean(accessToken && user),
+    initializing,
     loading,
     login,
     register,
@@ -372,6 +375,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }), [
     user,
     accessToken,
+    initializing,
     loading,
     login,
     register,

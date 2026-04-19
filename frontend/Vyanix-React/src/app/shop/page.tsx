@@ -32,7 +32,7 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
           <p className="text-muted-foreground max-w-2xl">
             {query
               ? `Showing results for "${query}"`
-              : 'Explore the full Vyanix catalog with live inventory and pricing from the backend.'}
+              : 'Explore the full Vyanix catalog'}
           </p>
         </div>
 
