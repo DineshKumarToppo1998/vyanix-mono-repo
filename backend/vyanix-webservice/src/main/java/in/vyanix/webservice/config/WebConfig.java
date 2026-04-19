@@ -1,5 +1,6 @@
 package in.vyanix.webservice.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.cors.CorsConfiguration;
@@ -12,17 +13,13 @@ import java.util.Arrays;
 @Configuration
 public class WebConfig {
 
+    @Value("${app.cors.allowed-origins:http://localhost,https://localhost,http://localhost:3000,https://localhost:3000,http://localhost:9002,http://192.168.29.215:9002}")
+    private String[] allowedOrigins;
+
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(Arrays.asList(
-            "http://localhost",
-            "https://localhost",
-            "http://localhost:3000",
-            "https://localhost:3000",
-            "http://localhost:9002",
-            "http://192.168.29.215:9002"
-        ));
+        config.setAllowedOrigins(Arrays.asList(allowedOrigins));
         config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(Arrays.asList("*"));
         config.setAllowCredentials(true);
